@@ -27,4 +27,12 @@ public class VarDec {
     public String toString() {
         return type.toString() + " " + variable.toString();
     }
+
+    public static Type[] types(final VarDec[] decs) {
+        final Type[] result = new Type[decs.length];
+        for (int index = 0; index < result.length; index++) {
+            result[x] = decs[x].type;
+        }
+        return result;
+    }
 }

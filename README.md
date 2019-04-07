@@ -13,11 +13,12 @@ exp ::= i | lhs
 lhs ::= x | lhs.x | `this`
 type ::= int | cname
 vdec ::= type x
-stmt ::= vdec = new cname(e*) |
-         vdec = e.mname(e*) |
-         print(e) |
-         return e |
-         lhs = e |
+stmt ::= vdec = new cname(exp*) |
+         vdec = exp.mname(exp*) |
+         print(exp) |
+         return exp |
+         lhs = exp |
+         super(exp*)
          stmt; stmt
 mdef ::= type mname(vdec*) { stmt }
 cdef ::= class cname [extends cname ] {
