@@ -31,7 +31,7 @@ public class VarDec {
     public static Type[] types(final VarDec[] decs) {
         final Type[] result = new Type[decs.length];
         for (int index = 0; index < result.length; index++) {
-            result[x] = decs[x].type;
+            result[index] = decs[index].type;
         }
         return result;
     }
