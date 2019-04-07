@@ -20,7 +20,7 @@ stmt ::= vdec = new cname(exp*) |
          lhs = exp |
          super(exp*)
          stmt; stmt
-mdef ::= type mname(vdec*) { stmt }
+mdef ::= [virtual] type mname(vdec*) { stmt }
 cdef ::= class cname [extends cname ] {
            vdec*
            init(vdec*) { stmt }

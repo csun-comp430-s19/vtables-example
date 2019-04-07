@@ -3,11 +3,13 @@ package vtables_example.syntax;
 public class FieldAccessLhs implements Lhs {
     public final Lhs lhs;
     public final Variable field;
-
+    private ClassName lhsClass; // intended to be filled in by the typechecker
+    
     public FieldAccessLhs(final Lhs lhs,
                           final Variable field) {
         this.lhs = lhs;
         this.field = field;
+        lhsClass = null;
     }
 
     public int hashCode() {
@@ -26,6 +28,16 @@ public class FieldAccessLhs implements Lhs {
 
     public String toString() {
         return lhs.toString() + "." + field.toString();
+    }
+
+    public void setLhsClass(final ClassName lhsClass) {
+        assert(this.lhsClass == null);
+        this.lhsClass = lhsClass;
+    }
+
+    public ClassName getLhsClass() {
+        assert(lhsClass != null);
+        return lhsClass;
     }
 }
 
