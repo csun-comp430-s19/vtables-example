@@ -1,4 +1,4 @@
-# Subtyping and Virtual Tables Example #
+# Virtual Tables Example #
 
 Simple language that understands subtyping and virtual dispatch (vtables).
 Syntax is below:

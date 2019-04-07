@@ -1,4 +1,4 @@
-package vtables_subtyping_example.syntax;
+package vtables_example.syntax;
 
 public class ReturnStmt implements Stmt {
     public final Exp exp;

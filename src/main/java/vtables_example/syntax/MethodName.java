@@ -1,4 +1,4 @@
-package vtables_subtyping_example.syntax;
+package vtables_example.syntax;
 
 public class MethodName extends Name {
     public MethodName(final String name) {

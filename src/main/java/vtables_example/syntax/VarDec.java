@@ -1,4 +1,4 @@
-package vtables_subtyping_example.syntax;
+package vtables_example.syntax;
 
 public class VarDec {
     public final Type type;

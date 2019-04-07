@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>vtables_subtyping_example</groupId>
-  <artifactId>vtables_subtyping_example</artifactId>
+  <groupId>vtables_example</groupId>
+  <artifactId>vtables_example</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>vtables_subtyping_example</name>
+  <name>vtables_example</name>
   <url>http://maven.apache.org</url>
   <dependencies>
     <dependency>
