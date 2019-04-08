@@ -118,7 +118,8 @@ public class MIPSCodeGenerator {
             final int offsetFromField = fieldOffset(asField.getLhsClass(),
                                                     asField.field);
             putLhsAddressIntoRegister(destination, asField.lhs);
-            add(new Lw(destination, offsetFromField, destination));
+            add(new Lw(destination, 0, destination));
+            add(new Addi(destination, destination, offsetFromField));
         } else if (lhs instanceof ThisLhs) {
             // direct assignment to this is disallowed (typechecker makes sure of this)
             final int offset = variables.variableOffset(THIS_VARIABLE);
@@ -168,9 +169,15 @@ public class MIPSCodeGenerator {
     }
     
     public void compileParams(final Exp[] params, final MIPSRegister temp) {
+        final MIPSRegister sp = MIPSRegister.SP;
+        int offset = -4;
         for (final Exp param : params) {
             compileExpression(param, temp);
-            push(temp);
+            add(new Sw(temp, offset, sp));
+            offset -= 4;
+        }
+        if (params.length > 0) {
+            add(new Addi(sp, sp, -(params.length * 4)));
         }
     }
 
@@ -299,13 +306,16 @@ public class MIPSCodeGenerator {
                                4);
 
         // first parameter is always this
+        final VariableTableResetPoint resetPoint = variables.makeResetPoint();
         push(MIPSRegister.V0);
+        variables.pushDummy(4);
 
         // evaluate the remaining parameters, putting them on the stack
         compileParams(stmt.params, MIPSRegister.T0);
 
         // call the constructor
         add(new Jal(constructorLabel(stmt.name)));
+        variables.resetTo(resetPoint);
     }
 
     public FindMethodResult findMethod(final ClassName onClass, final MethodName methodName) {
@@ -324,8 +334,10 @@ public class MIPSCodeGenerator {
         final MIPSRegister t0 = MIPSRegister.T0;
         
         // this is always first
+        final VariableTableResetPoint resetPoint = variables.makeResetPoint();
         compileExpression(stmt.exp, t0);
         push(t0);
+        variables.pushDummy(4);
         
         // put parameters on the stack
         compileParams(stmt.params, t0);
@@ -344,6 +356,7 @@ public class MIPSCodeGenerator {
         add(new Jal(jumpTo));
 
         // make space for the variable
+        variables.resetTo(resetPoint);
         push(MIPSRegister.V0);
         variables.pushVariable(stmt.vardec.variable,
                                stmt.vardec.type,
@@ -392,15 +405,18 @@ public class MIPSCodeGenerator {
         assert(def.extendsName != null); // typechecker checks this
         
         // this is always first
+        final VariableTableResetPoint resetPoint = variables.makeResetPoint();
         final MIPSRegister t0 = MIPSRegister.T0;
         compileVariableAccess(THIS_VARIABLE, t0);
         push(t0);
+        variables.pushDummy(4);
         
         // put parameters on the stack
         compileParams(stmt.params, MIPSRegister.T0);
 
         // call superclass' constructor
         add(new Jal(constructorLabel(def.extendsName)));
+        variables.resetTo(resetPoint);
     }
 
     public void compileSequenceStmt(final ClassName forClass, final SequenceStmt stmt) {

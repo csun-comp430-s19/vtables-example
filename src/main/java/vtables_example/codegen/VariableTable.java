@@ -2,6 +2,7 @@ package vtables_example.codegen;
 
 import vtables_example.syntax.Variable;
 import vtables_example.syntax.Type;
+import vtables_example.syntax.VoidType;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -19,6 +20,12 @@ public class VariableTable {
         variables.push(new VariableEntry(variable, type, size));
     }
 
+    public void pushDummy(final int size) {
+        pushVariable(new Variable("DUMMY"),
+                     new VoidType(),
+                     size);
+    }
+    
     public VariableTableResetPoint makeResetPoint() {
         return new VariableTableResetPoint(variables.size());
     }
