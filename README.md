@@ -37,3 +37,5 @@ program ::= cdef* stmt
 - Most expressions do not nest (e.g., `new` and method calls are statements, not expressions).
   This is to simplify codegen so that every expression can be compiled with a single register, without needing the stack.
 - Overriding methods must be marked `virtual`, unlike C++
+- There is no parser or typechecker.
+  The only new feature with typechecking is subtyping.
