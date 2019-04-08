@@ -8,7 +8,7 @@ public class MIPSComment implements MIPSEntry {
     }
 
     public String toString() {
-        return "; " + comment;
+        return "# " + comment;
     }
 
     public int hashCode() {

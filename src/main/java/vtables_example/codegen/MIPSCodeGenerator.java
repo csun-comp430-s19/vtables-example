@@ -58,19 +58,54 @@ public class MIPSCodeGenerator {
         return parentSize + def.instanceVariables.length * 4;
     }
 
-    public int fieldOffset(final ClassName className,
-                           final Variable variable) {
-        final VarDec[] vars = classes.get(className).instanceVariables;
+    // returns -1 if this class doesn't contain this field
+    private int selfFieldOffset(final ClassDefinition def, final Variable field) {
         int offset = 0;
-        for (final VarDec dec : vars) {
-            if (dec.variable.equals(variable)) {
+        for (final VarDec dec : def.instanceVariables) {
+            if (dec.variable.equals(field)) {
                 return offset;
             }
             offset += 4;
         }
-
-        assert(false);
-        return 0;
+        return -1;
+    }
+    
+    private FieldOffsetResult fieldOffsetHelper(final ClassName className,
+                                                final Variable variable) {
+        final ClassDefinition def = classes.get(className);
+        if (def.extendsName != null) {
+            // see if my parent has it
+            final FieldOffsetResult fromParent = fieldOffsetHelper(def.extendsName, variable);
+            if (fromParent.found) {
+                return fromParent;
+            } else {
+                final int fromSelf = selfFieldOffset(def, variable);
+                if (fromSelf == -1) {
+                    // I don't have it and neither did my parent
+                    return new FieldOffsetResult(false, 0);
+                } else {
+                    // I do have it
+                    return new FieldOffsetResult(true, sizeofClass(def.extendsName) + fromSelf);
+                }
+            }
+        } else {
+            // no parent class
+            final int fromSelf = selfFieldOffset(def, variable);
+            if (fromSelf == -1) {
+                // I don't have it
+                return new FieldOffsetResult(false, 0);
+            } else {
+                // I do have it
+                return new FieldOffsetResult(true, fromSelf);
+            }
+        }
+    }
+    
+    public int fieldOffset(final ClassName className,
+                           final Variable variable) {
+        final FieldOffsetResult res = fieldOffsetHelper(className, variable);
+        assert(res.found);
+        return res.offset;
     }
 
     public void putLhsAddressIntoRegister(final MIPSRegister destination,
@@ -105,6 +140,7 @@ public class MIPSCodeGenerator {
             final FieldAccessLhs asField = (FieldAccessLhs)lhs;
             compileLhsAsExpression(asField.lhs, resultIn);
             final int offset = fieldOffset(asField.getLhsClass(), asField.field);
+            add(new MIPSComment("lhs offset"));
             add(new Lw(resultIn, offset, resultIn));
         } else if (lhs instanceof ThisLhs) {
             compileVariableAccess(THIS_VARIABLE, resultIn);
@@ -182,7 +218,7 @@ public class MIPSCodeGenerator {
                                  final Stmt body) {
         add(label);
         callEntrySetup(forClass, params);
-        compileStatement(body);
+        compileStatement(forClass, body);
         callExitSetup();
     }
     
@@ -217,7 +253,7 @@ public class MIPSCodeGenerator {
 
     public void compileProgram(final Program program) {
         add(new MIPSLabel("main", -1));
-        compileStatement(program.entryPoint);
+        compileStatement(null, program.entryPoint);
         variables.clear();
         mainEnd();
         for (final ClassDefinition def : program.classes) {
@@ -350,20 +386,33 @@ public class MIPSCodeGenerator {
         add(new Sw(t0, 0, t1));
     }
 
-    public void compileSuperStmt(final SuperStmt stmt) {
-        assert(false);
+    public void compileSuperStmt(final ClassName forClass, final SuperStmt stmt) {
+        assert(forClass != null); // typechecker checks this
+        final ClassDefinition def = classes.get(forClass);
+        assert(def.extendsName != null); // typechecker checks this
+        
+        // this is always first
+        final MIPSRegister t0 = MIPSRegister.T0;
+        compileVariableAccess(THIS_VARIABLE, t0);
+        push(t0);
+        
+        // put parameters on the stack
+        compileParams(stmt.params, MIPSRegister.T0);
+
+        // call superclass' constructor
+        add(new Jal(constructorLabel(def.extendsName)));
     }
 
-    public void compileSequenceStmt(final SequenceStmt stmt) {
-        compileStatement(stmt.first);
-        compileStatement(stmt.second);
+    public void compileSequenceStmt(final ClassName forClass, final SequenceStmt stmt) {
+        compileStatement(forClass, stmt.first);
+        compileStatement(forClass, stmt.second);
     }
 
     public void compileEmptyStmt(final EmptyStmt stmt) {
         // do nothing
     }
     
-    public void compileStatement(final Stmt stmt) {
+    public void compileStatement(final ClassName forClass, final Stmt stmt) {
         if (stmt instanceof NewStmt) {
             compileNewStmt((NewStmt)stmt);
         } else if (stmt instanceof MethodCallStmt) {
@@ -375,9 +424,9 @@ public class MIPSCodeGenerator {
         } else if (stmt instanceof AssignStmt) {
             compileAssignStmt((AssignStmt)stmt);
         } else if (stmt instanceof SuperStmt) {
-            compileSuperStmt((SuperStmt)stmt);
+            compileSuperStmt(forClass, (SuperStmt)stmt);
         } else if (stmt instanceof SequenceStmt) {
-            compileSequenceStmt((SequenceStmt)stmt);
+            compileSequenceStmt(forClass, (SequenceStmt)stmt);
         } else if (stmt instanceof EmptyStmt) {
             compileEmptyStmt((EmptyStmt)stmt);
         } else {

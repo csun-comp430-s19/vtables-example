@@ -240,4 +240,138 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                    new ReturnStmt(new LhsExp(lhs)))
                                           }));
     }
+
+    @Test
+    public void testSuperGetFirst() throws IOException {
+        // class Base {
+        //   int x;
+        //   init(int x) {
+        //     this.x = x;
+        //   }
+        // }
+        // class Sub extends Base {
+        //   int y;
+        //   init(int x, int y) {
+        //     super(x);
+        //     this.y = y;
+        //   }
+        // }
+        // Sub s = new Sub(1, 2);
+        // print(s.x);
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName subClass = new ClassName("Sub");
+        final Variable x = new Variable("x");
+        final Variable y = new Variable("y");
+        final Variable s = new Variable("s");
+        final FieldAccessLhs accessThisX = new FieldAccessLhs(new ThisLhs(), x);
+        accessThisX.setLhsClass(baseClass);
+        final FieldAccessLhs accessThisY = new FieldAccessLhs(new ThisLhs(), y);
+        accessThisY.setLhsClass(subClass);
+        final FieldAccessLhs accessSX = new FieldAccessLhs(new VariableLhs(s), x);
+        accessSX.setLhsClass(subClass);
+
+        assertResultC(1,
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass),
+                                                   s),
+                                        subClass,
+                                        new Exp[] {
+                                            new IntExp(1),
+                                            new IntExp(2)
+                                        }),
+                            new PrintStmt(new LhsExp(accessSX))),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              new AssignStmt(accessThisX,
+                                                             new LhsExp(new VariableLhs(x)))),
+                                          new MethodDefinition[0]),
+                      new ClassDefinition(subClass,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), y)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x),
+                                                  new VarDec(new IntType(), y)
+                                              },
+                                              stmts(new SuperStmt(new Exp[] {
+                                                          new LhsExp(new VariableLhs(x))
+                                                      }),
+                                                  new AssignStmt(accessThisY,
+                                                                 new LhsExp(new VariableLhs(y))))),
+                                          new MethodDefinition[0]));
+    }
+
+    @Test
+    public void testSuperGetSecond() throws IOException {
+        // class Base {
+        //   int x;
+        //   init(int x) {
+        //     this.x = x;
+        //   }
+        // }
+        // class Sub extends Base {
+        //   int y;
+        //   init(int x, int y) {
+        //     super(x);
+        //     this.y = y;
+        //   }
+        // }
+        // Sub s = new Sub(1, 2);
+        // print(s.y);
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName subClass = new ClassName("Sub");
+        final Variable x = new Variable("x");
+        final Variable y = new Variable("y");
+        final Variable s = new Variable("s");
+        final FieldAccessLhs accessThisX = new FieldAccessLhs(new ThisLhs(), x);
+        accessThisX.setLhsClass(baseClass);
+        final FieldAccessLhs accessThisY = new FieldAccessLhs(new ThisLhs(), y);
+        accessThisY.setLhsClass(subClass);
+        final FieldAccessLhs accessSY = new FieldAccessLhs(new VariableLhs(s), y);
+        accessSY.setLhsClass(subClass);
+
+        assertResultC(2,
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass),
+                                                   s),
+                                        subClass,
+                                        new Exp[] {
+                                            new IntExp(1),
+                                            new IntExp(2)
+                                        }),
+                            new PrintStmt(new LhsExp(accessSY))),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              new AssignStmt(accessThisX,
+                                                             new LhsExp(new VariableLhs(x)))),
+                                          new MethodDefinition[0]),
+                      new ClassDefinition(subClass,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), y)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x),
+                                                  new VarDec(new IntType(), y)
+                                              },
+                                              stmts(new SuperStmt(new Exp[] {
+                                                          new LhsExp(new VariableLhs(x))
+                                                      }),
+                                                  new AssignStmt(accessThisY,
+                                                                 new LhsExp(new VariableLhs(y))))),
+                                          new MethodDefinition[0]));
+    }
 }
