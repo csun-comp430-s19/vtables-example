@@ -3,6 +3,7 @@ package vtables_example.syntax;
 import java.util.Arrays;
 
 public class MethodDefinition {
+    // unlike C++, this must be set all the way down
     public boolean isVirtual;
     public final Type returnType;
     public final MethodName name;

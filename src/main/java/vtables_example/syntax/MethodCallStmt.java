@@ -7,7 +7,8 @@ public class MethodCallStmt implements Stmt {
     public final Exp exp;
     public final MethodName name;
     public final Exp[] params;
-
+    private ClassName onClass; // intended to be filled in by the typechecker
+    
     public MethodCallStmt(final VarDec vardec,
                           final Exp exp,
                           final MethodName name,
@@ -16,6 +17,7 @@ public class MethodCallStmt implements Stmt {
         this.exp = exp;
         this.name = name;
         this.params = params;
+        onClass = null;
     }
 
     public int hashCode() {
@@ -46,5 +48,15 @@ public class MethodCallStmt implements Stmt {
                 "(" +
                 Join.join(", ", params) +
                 ")");
+    }
+
+    public void setOnClass(final ClassName onClass) {
+        assert(this.onClass == null);
+        this.onClass = onClass;
+    }
+
+    public ClassName getOnClass() {
+        assert(onClass != null);
+        return onClass;
     }
 }

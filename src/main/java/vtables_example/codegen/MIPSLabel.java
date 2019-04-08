@@ -11,7 +11,7 @@ public class MIPSLabel implements MIPSEntry {
     }
 
     public String getName() {
-        return baseName + id;
+        return (id >= 0) ? baseName + id : baseName;
     }
     
     public String toString() {

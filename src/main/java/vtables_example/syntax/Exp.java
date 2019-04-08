@@ -1,3 +1,3 @@
 package vtables_example.syntax;
 
-public interface Exp extends Lhs {}
+public interface Exp {}
