@@ -178,10 +178,66 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                               new MethodDefinition(false,
                                                                    new VoidType(),
                                                                    fooMethod,
-                                                                   new VarDec[] {
-                                                                       new VarDec(new IntType(), x)
-                                                                   },
+                                                                   new VarDec[0],
                                                                    new PrintStmt(new LhsExp(lhs)))
+                                          }));
+    }
+
+    @Test
+    public void testReturnMethod() throws IOException {
+        // class Foo {
+        //   int x;
+        //   init(int x) {
+        //     this.x = x;
+        //   }
+        //   int foo() {
+        //     return this.x;
+        //   }
+        // }
+        // Foo f = new Print(1);
+        // int v = f.foo();
+        // print(v);
+
+        final ClassName fooClass = new ClassName("Foo");
+        final MethodName fooMethod = new MethodName("foo");
+        final Variable f = new Variable("f");
+        final Variable x = new Variable("x");
+        final Variable v = new Variable("v");
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new IntType(),
+                                                                  v),
+                                                       new LhsExp(new VariableLhs(f)),
+                                                       fooMethod,
+                                                       new Exp[0]);
+        call.setOnClass(fooClass);
+
+        final FieldAccessLhs lhs = new FieldAccessLhs(new ThisLhs(), x);
+        lhs.setLhsClass(fooClass);
+        
+        assertResultC(1,
+                      stmts(new NewStmt(new VarDec(new ClassType(fooClass),
+                                                   f),
+                                        fooClass,
+                                        new Exp[] {
+                                            new IntExp(1)
+                                        }),
+                            call,
+                            new PrintStmt(new LhsExp(new VariableLhs(v)))),
+                      new ClassDefinition(fooClass,
+                                          null,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              new AssignStmt(lhs,
+                                                             new LhsExp(new VariableLhs(x)))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(false,
+                                                                   new IntType(),
+                                                                   fooMethod,
+                                                                   new VarDec[0],
+                                                                   new ReturnStmt(new LhsExp(lhs)))
                                           }));
     }
 }

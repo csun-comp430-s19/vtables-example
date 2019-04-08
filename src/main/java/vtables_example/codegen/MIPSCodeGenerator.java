@@ -295,13 +295,23 @@ public class MIPSCodeGenerator {
         compileParams(stmt.params, t0);
 
         final FindMethodResult find = findMethod(stmt.getOnClass(), stmt.name);
+        final MIPSLabel jumpTo;
         if (find.isVirtual) {
             // virtual calls need the vtable
             assert(false); // TODO
+            jumpTo = null;
         } else {
             // non-virtual calls behave as normal function calls
-            add(new Jal(nonVirtualMethodLabel(stmt.getOnClass(), stmt.name)));
+            jumpTo = nonVirtualMethodLabel(stmt.getOnClass(), stmt.name);
         }
+
+        add(new Jal(jumpTo));
+
+        // make space for the variable
+        push(MIPSRegister.V0);
+        variables.pushVariable(stmt.vardec.variable,
+                               stmt.vardec.type,
+                               4);
     }
 
     public void printA0() {
@@ -320,7 +330,16 @@ public class MIPSCodeGenerator {
     }
 
     public void compileReturnStmt(final ReturnStmt stmt) {
-        assert(false);
+        // Typechecker ensures this is the last bit in a method.
+        // Methods now only have exactly one return, right at the end.
+        // As such, we just put the return value in the right register, and
+        // allow compileFunction to do the proper return setup
+        if (stmt.exp != null) {
+            compileExpression(stmt.exp, MIPSRegister.V0);
+        } else {
+            // not strictly necessary
+            add(new Li(MIPSRegister.V0, 0));
+        }
     }
 
     public void compileAssignStmt(final AssignStmt stmt) {

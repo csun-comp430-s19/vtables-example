@@ -1,6 +1,7 @@
 package vtables_example.syntax;
 
 public class ReturnStmt implements Stmt {
+    // null if returning void
     public final Exp exp;
 
     public ReturnStmt(final Exp exp) {
@@ -8,15 +9,29 @@ public class ReturnStmt implements Stmt {
     }
 
     public int hashCode() {
-        return exp.hashCode();
+        return (exp == null) ? 0 : exp.hashCode();
     }
 
     public String toString() {
-        return "return " + exp.toString();
+        if (exp == null) {
+            return "return";
+        } else {
+            return "return " + exp.toString();
+        }
     }
 
     public boolean equals(final Object other) {
-        return (other instanceof ReturnStmt &&
-                ((ReturnStmt)other).exp.equals(exp));
+        if (other instanceof ReturnStmt) {
+            final Exp otherExp = ((ReturnStmt)other).exp;
+            if (exp == null) {
+                return otherExp == null;
+            } else if (otherExp == null) {
+                return false;
+            } else {
+                return exp.equals(otherExp);
+            }
+        } else {
+            return false;
+        }
     }
 }
