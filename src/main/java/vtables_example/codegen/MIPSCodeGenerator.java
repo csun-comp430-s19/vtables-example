@@ -1,6 +1,7 @@
 package vtables_example.codegen;
 
 import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -22,14 +23,54 @@ public class MIPSCodeGenerator {
     private final Map<ClassName, ClassDefinition> classes;
     private final List<MIPSEntry> entries;
     private final VariableTable variables;
+    // holds offsets of methods in the final vtable
+    private final Map<ClassName, List<MethodName>> vtableMethodOffsets;
     // ---END INSTANCE VARIABLES
     
     public MIPSCodeGenerator(final Map<ClassName, ClassDefinition> classes) {
         this.classes = classes;
         entries = new ArrayList<MIPSEntry>();
         variables = new VariableTable();
+        vtableMethodOffsets = new HashMap<ClassName, List<MethodName>>();
+        computeVTableMethodOffsets();
     }
 
+    private void computeVTableMethodOffsets() {
+        for (final ClassDefinition def : classes.values()) {
+            computeVTableMethodOffsetsFor(def);
+        }
+    }
+
+    // returns -1 if it's not in there
+    public static int methodOffset(final List<MethodName> vTable, final MethodName method) {
+        return vTable.indexOf(method);
+    }
+    
+    private void computeVTableMethodOffsetsFor(final ClassDefinition def) {
+        if (vtableMethodOffsets.get(def.myName) == null) {
+            final List<MethodName> myOffsets = new ArrayList<MethodName>();
+            vtableMethodOffsets.put(def.myName, myOffsets);
+
+            // the base of my table is the parent's table
+            final List<MethodName> parentOffsets;
+            if (def.extendsName != null) {
+                computeVTableMethodOffsetsFor(classes.get(def.extendsName));
+                parentOffsets = vtableMethodOffsets.get(def.extendsName);
+            } else {
+                parentOffsets = new ArrayList<MethodName>();
+            }
+            myOffsets.addAll(parentOffsets);
+
+
+            // add in any virtual methods that aren't in the parent table
+            for (final MethodDefinition method : def.methods) {
+                if (method.isVirtual && methodOffset(myOffsets, method.name) == -1) {
+                    myOffsets.add(method.name);
+                }
+            }
+        }
+    }
+    
     public void add(final MIPSEntry i) {
         entries.add(i);
     } // add
@@ -160,12 +201,12 @@ public class MIPSCodeGenerator {
     }
 
     public static MIPSLabel constructorLabel(final ClassName forClass) {
-        return new MIPSLabel("new_" + forClass.name, -1);
+        return new MIPSLabel("new_" + forClass.name);
     }
 
-    public static MIPSLabel nonVirtualMethodLabel(final ClassName forClass,
-                                                  final MethodName forMethod) {
-        return new MIPSLabel(forClass.name + "_" + forMethod.name, 0);
+    public static MIPSLabel methodLabel(final ClassName forClass,
+                                        final MethodName forMethod) {
+        return new MIPSLabel(forClass.name + "_" + forMethod.name);
     }
     
     public void compileParams(final Exp[] params, final MIPSRegister temp) {
@@ -259,7 +300,7 @@ public class MIPSCodeGenerator {
     }
 
     public void compileProgram(final Program program) {
-        add(new MIPSLabel("main", -1));
+        add(new MIPSLabel("main"));
         compileStatement(null, program.entryPoint);
         variables.clear();
         mainEnd();
@@ -278,7 +319,7 @@ public class MIPSCodeGenerator {
     public void compileMethod(final ClassName forClass,
                               final MethodDefinition method) {
         assert(!method.isVirtual); // TODO
-        compileFunction(nonVirtualMethodLabel(forClass, method.name),
+        compileFunction(methodLabel(forClass, method.name),
                         forClass,
                         method.params,
                         method.body);
@@ -350,7 +391,7 @@ public class MIPSCodeGenerator {
             jumpTo = null;
         } else {
             // non-virtual calls behave as normal function calls
-            jumpTo = nonVirtualMethodLabel(stmt.getOnClass(), stmt.name);
+            jumpTo = methodLabel(stmt.getOnClass(), stmt.name);
         }
 
         add(new Jal(jumpTo));

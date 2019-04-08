@@ -1,34 +1,22 @@
 package vtables_example.codegen;
 
 public class MIPSLabel implements MIPSEntry {
-    public final String baseName;
-    public final int id;
+    public final String name;
 
-    public MIPSLabel(final String baseName,
-                     final int id) {
-        this.baseName = baseName;
-        this.id = id;
+    public MIPSLabel(final String name) {
+        this.name = name;
     }
 
-    public String getName() {
-        return (id >= 0) ? baseName + id : baseName;
-    }
-    
     public String toString() {
-        return getName() + ":";
+        return name + ":";
     }
 
     public boolean equals(final Object other) {
-        if (other instanceof MIPSLabel) {
-            final MIPSLabel label = (MIPSLabel)other;
-            return (baseName.equals(label.baseName) &&
-                    id == label.id);
-        } else {
-            return false;
-        }
+        return (other instanceof MIPSLabel &&
+                ((MIPSLabel)other).name.equals(name));
     }
 
     public int hashCode() {
-        return baseName.hashCode() + id;
+        return name.hashCode();
     }
 }

@@ -13,7 +13,7 @@ public class SingleLabelInstruction implements MIPSInstruction {
     public String toString() {
         return (MIPSInstruction.INDENT +
                 instructionName + " " +
-                label.getName());
+                label.name);
     }
 
     public boolean equals(final Object other) {
