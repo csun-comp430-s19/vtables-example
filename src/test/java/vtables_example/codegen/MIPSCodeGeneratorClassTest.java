@@ -414,4 +414,578 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                    new PrintStmt(new IntExp(1)))
                                           }));
     }
+
+    @Test
+    public void testSingleVirtualNoInheritanceInstanceVariable() throws IOException {
+        // class Base {
+        //   int x;
+        //   init(int x) {
+        //     this.x = x;
+        //   }
+        //   virtual void doPrint() {
+        //     print(this.x);
+        //   }
+        // }
+        // Base b = new Base(1);
+        // void v = b.doPrint();
+
+        final ClassName baseClass = new ClassName("Base");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final Variable x = new Variable("x");
+        final Variable b = new Variable("b");
+        final Variable v = new Variable("v");
+        final FieldAccessLhs accessX = new FieldAccessLhs(new ThisLhs(), x);
+        accessX.setLhsClass(baseClass);
+        
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
+                                                       new LhsExp(new VariableLhs(b)),
+                                                       doPrintMethod,
+                                                       new Exp[0]);
+        call.setOnClass(baseClass);
+
+        assertResultC(1,
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                                        baseClass,
+                                        new Exp[] {
+                                            new IntExp(1)
+                                        }),
+                            call),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              new AssignStmt(accessX, new LhsExp(new VariableLhs(x)))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new LhsExp(accessX)))
+                                          }));
+    }
+
+    @Test
+    public void testSingleVirtualWithInheritanceUsesBase() throws IOException {
+        // class Base {
+        //   init() {}
+        //   virtual void doPrint() {
+        //     print(1);
+        //   }
+        // }
+        // class Sub extends Base {
+        //   int x;
+        //   init(int x) {
+        //     super();
+        //     this.x = x;
+        //   }
+        //   virtual void doPrint() {
+        //     print(this.x);
+        //   }
+        // }
+        // Base b = new Base();
+        // void v = b.doPrint();
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName subClass = new ClassName("Sub");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final Variable x = new Variable("x");
+        final Variable b = new Variable("b");
+        final Variable v = new Variable("v");
+        final FieldAccessLhs accessX = new FieldAccessLhs(new ThisLhs(), x);
+        accessX.setLhsClass(subClass);
+        
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
+                                                       new LhsExp(new VariableLhs(b)),
+                                                       doPrintMethod,
+                                                       new Exp[0]);
+        call.setOnClass(baseClass);
+
+        assertResultC(1,
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                                        baseClass,
+                                        new Exp[0]),
+                            call),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new EmptyStmt()),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(1)))
+                                          }),
+                      new ClassDefinition(subClass,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              stmts(new SuperStmt(new Exp[0]),
+                                                    new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new LhsExp(accessX)))
+                                          }));
+    }
+
+    @Test
+    public void testSingleVirtualWithInheritanceUsesSub() throws IOException {
+        // class Base {
+        //   init() {}
+        //   virtual void doPrint() {
+        //     print(1);
+        //   }
+        // }
+        // class Sub extends Base {
+        //   int x;
+        //   init(int x) {
+        //     super();
+        //     this.x = x;
+        //   }
+        //   virtual void doPrint() {
+        //     print(this.x);
+        //   }
+        // }
+        // Base b = new Sub(2);
+        // void v = b.doPrint();
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName subClass = new ClassName("Sub");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final Variable x = new Variable("x");
+        final Variable b = new Variable("b");
+        final Variable v = new Variable("v");
+        final FieldAccessLhs accessX = new FieldAccessLhs(new ThisLhs(), x);
+        accessX.setLhsClass(subClass);
+        
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
+                                                       new LhsExp(new VariableLhs(b)),
+                                                       doPrintMethod,
+                                                       new Exp[0]);
+        call.setOnClass(baseClass);
+
+        assertResultC(2,
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                                        subClass,
+                                        new Exp[] {
+                                            new IntExp(2)
+                                        }),
+                            call),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new EmptyStmt()),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(1)))
+                                          }),
+                      new ClassDefinition(subClass,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              stmts(new SuperStmt(new Exp[0]),
+                                                    new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new LhsExp(accessX)))
+                                          }));
+    }
+
+    @Test
+    public void testHasInheritedMethod() throws IOException {
+        // class Base {
+        //   init() {}
+        //   virtual void doPrint() {
+        //     print(1);
+        //   }
+        //   virtual void doOtherPrint() {
+        //     print(3);
+        //   }
+        // }
+        // class Sub extends Base {
+        //   int x;
+        //   init(int x) {
+        //     super();
+        //     this.x = x;
+        //   }
+        //   virtual void doPrint() {
+        //     print(this.x);
+        //   }
+        // }
+        // Base b = new Sub(2);
+        // void v = b.doOtherPrint();
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName subClass = new ClassName("Sub");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final MethodName doOtherPrintMethod = new MethodName("doOtherPrint");
+        final Variable x = new Variable("x");
+        final Variable b = new Variable("b");
+        final Variable v = new Variable("v");
+        final FieldAccessLhs accessX = new FieldAccessLhs(new ThisLhs(), x);
+        accessX.setLhsClass(subClass);
+        
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
+                                                       new LhsExp(new VariableLhs(b)),
+                                                       doOtherPrintMethod,
+                                                       new Exp[0]);
+        call.setOnClass(baseClass);
+
+        assertResultC(3,
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                                        subClass,
+                                        new Exp[] {
+                                            new IntExp(2)
+                                        }),
+                            call),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new EmptyStmt()),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(1))),
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doOtherPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(3)))
+                                          }),
+                      new ClassDefinition(subClass,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              stmts(new SuperStmt(new Exp[0]),
+                                                    new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new LhsExp(accessX)))
+                                          }));
+    }
+
+    @Test
+    public void testCanAddVirtualInSubclass() throws IOException {
+        // class Base {
+        //   init() {}
+        //   virtual void doPrint() {
+        //     print(1);
+        //   }
+        //   virtual void doOtherPrint() {
+        //     print(3);
+        //   }
+        // }
+        // class Sub extends Base {
+        //   int x;
+        //   init(int x) {
+        //     super();
+        //     this.x = x;
+        //   }
+        //   virtual void doPrint() {
+        //     print(this.x);
+        //   }
+        //   virtual int getX() {
+        //     return this.x;
+        //   }
+        // }
+        // Sub s = new Sub(2);
+        // int v = s.getX();
+        // print(v);
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName subClass = new ClassName("Sub");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final MethodName doOtherPrintMethod = new MethodName("doOtherPrint");
+        final MethodName getXMethod = new MethodName("getX");
+        final Variable x = new Variable("x");
+        final Variable s = new Variable("s");
+        final Variable v = new Variable("v");
+        final FieldAccessLhs accessX = new FieldAccessLhs(new ThisLhs(), x);
+        accessX.setLhsClass(subClass);
+        
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new IntType(), v),
+                                                       new LhsExp(new VariableLhs(s)),
+                                                       getXMethod,
+                                                       new Exp[0]);
+        call.setOnClass(subClass);
+
+        assertResultC(2,
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass), s),
+                                        subClass,
+                                        new Exp[] {
+                                            new IntExp(2)
+                                        }),
+                            call,
+                            new PrintStmt(new LhsExp(new VariableLhs(v)))),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new EmptyStmt()),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(1))),
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doOtherPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(3)))
+                                          }),
+                      new ClassDefinition(subClass,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              stmts(new SuperStmt(new Exp[0]),
+                                                    new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new LhsExp(accessX))),
+                                              new MethodDefinition(true,
+                                                                   new IntType(),
+                                                                   getXMethod,
+                                                                   new VarDec[0],
+                                                                   new ReturnStmt(new LhsExp(accessX)))
+                                          }));
+    }
+
+    @Test
+    public void testCanAddNonVirtualInSubclass() throws IOException {
+        // class Base {
+        //   init() {}
+        //   virtual void doPrint() {
+        //     print(1);
+        //   }
+        //   virtual void doOtherPrint() {
+        //     print(3);
+        //   }
+        // }
+        // class Sub extends Base {
+        //   int x;
+        //   init(int x) {
+        //     super();
+        //     this.x = x;
+        //   }
+        //   virtual void doPrint() {
+        //     print(this.x);
+        //   }
+        //   int getX() {
+        //     return this.x;
+        //   }
+        // }
+        // Sub s = new Sub(2);
+        // int v = s.getX();
+        // print(v);
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName subClass = new ClassName("Sub");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final MethodName doOtherPrintMethod = new MethodName("doOtherPrint");
+        final MethodName getXMethod = new MethodName("getX");
+        final Variable x = new Variable("x");
+        final Variable s = new Variable("s");
+        final Variable v = new Variable("v");
+        final FieldAccessLhs accessX = new FieldAccessLhs(new ThisLhs(), x);
+        accessX.setLhsClass(subClass);
+        
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new IntType(), v),
+                                                       new LhsExp(new VariableLhs(s)),
+                                                       getXMethod,
+                                                       new Exp[0]);
+        call.setOnClass(subClass);
+
+        assertResultC(2,
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass), s),
+                                        subClass,
+                                        new Exp[] {
+                                            new IntExp(2)
+                                        }),
+                            call,
+                            new PrintStmt(new LhsExp(new VariableLhs(v)))),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new EmptyStmt()),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(1))),
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doOtherPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(3)))
+                                          }),
+                      new ClassDefinition(subClass,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              stmts(new SuperStmt(new Exp[0]),
+                                                    new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new LhsExp(accessX))),
+                                              new MethodDefinition(false,
+                                                                   new IntType(),
+                                                                   getXMethod,
+                                                                   new VarDec[0],
+                                                                   new ReturnStmt(new LhsExp(accessX)))
+                                          }));
+    }
+
+    @Test
+    public void testCanInheritFromBaseMultipleTimes() throws IOException {
+        // class Base {
+        //   init() {}
+        //   virtual void doPrint() {
+        //     print(1);
+        //   }
+        //   virtual void doOtherPrint() {
+        //     print(3);
+        //   }
+        // }
+        // class Sub1 extends Base {
+        //   int x;
+        //   init(int x) {
+        //     super();
+        //     this.x = x;
+        //   }
+        //   virtual void doPrint() {
+        //     print(this.x);
+        //   }
+        //   int getX() {
+        //     return this.x;
+        //   }
+        // }
+        // class Sub2 extends Base {
+        //   init() {
+        //     super();
+        //   }
+        //   virtual void doPrint() {
+        //     print(4);
+        //   }
+        // }
+        // Base b = new Sub2();
+        // void v = b.doPrint();
+
+        final ClassName baseClass = new ClassName("Base");
+        final ClassName sub1Class = new ClassName("Sub1");
+        final ClassName sub2Class = new ClassName("Sub2");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final MethodName doOtherPrintMethod = new MethodName("doOtherPrint");
+        final MethodName getXMethod = new MethodName("getX");
+        final Variable x = new Variable("x");
+        final Variable s = new Variable("s");
+        final Variable v = new Variable("v");
+        final FieldAccessLhs accessX = new FieldAccessLhs(new ThisLhs(), x);
+        accessX.setLhsClass(sub1Class);
+        
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new IntType(), v),
+                                                       new LhsExp(new VariableLhs(s)),
+                                                       doPrintMethod,
+                                                       new Exp[0]);
+        call.setOnClass(baseClass);
+
+        assertResultC(4,
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), s),
+                                        sub2Class,
+                                        new Exp[0]),
+                            call),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new EmptyStmt()),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(1))),
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doOtherPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(3)))
+                                          }),
+                      new ClassDefinition(sub1Class,
+                                          baseClass,
+                                          new VarDec[] {
+                                              new VarDec(new IntType(), x)
+                                          },
+                                          new Constructor(new VarDec[] {
+                                                  new VarDec(new IntType(), x)
+                                              },
+                                              stmts(new SuperStmt(new Exp[0]),
+                                                    new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new LhsExp(accessX))),
+                                              new MethodDefinition(false,
+                                                                   new IntType(),
+                                                                   getXMethod,
+                                                                   new VarDec[0],
+                                                                   new ReturnStmt(new LhsExp(accessX)))
+                                          }),
+                      new ClassDefinition(sub2Class,
+                                          baseClass,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new SuperStmt(new Exp[0])),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(4)))
+                                          }));
+    }
 }
