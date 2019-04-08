@@ -374,4 +374,44 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                  new LhsExp(new VariableLhs(y))))),
                                           new MethodDefinition[0]));
     }
+
+    @Test
+    public void testSingleVirtualNoInheritance() throws IOException {
+        // class Base {
+        //   init() {}
+        //   virtual void doPrint() {
+        //     print(1);
+        //   }
+        // }
+        // Base b = new Base();
+        // void v = b.doPrint();
+
+        final ClassName baseClass = new ClassName("Base");
+        final MethodName doPrintMethod = new MethodName("doPrint");
+        final Variable b = new Variable("b");
+        final Variable v = new Variable("v");
+
+        final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
+                                                       new LhsExp(new VariableLhs(b)),
+                                                       doPrintMethod,
+                                                       new Exp[0]);
+        call.setOnClass(baseClass);
+
+        assertResultC(1,
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                                        baseClass,
+                                        new Exp[0]),
+                            call),
+                      new ClassDefinition(baseClass,
+                                          null,
+                                          new VarDec[0],
+                                          new Constructor(new VarDec[0], new EmptyStmt()),
+                                          new MethodDefinition[] {
+                                              new MethodDefinition(true,
+                                                                   new VoidType(),
+                                                                   doPrintMethod,
+                                                                   new VarDec[0],
+                                                                   new PrintStmt(new IntExp(1)))
+                                          }));
+    }
 }

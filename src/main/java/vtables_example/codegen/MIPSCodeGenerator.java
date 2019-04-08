@@ -45,7 +45,7 @@ public class MIPSCodeGenerator {
     public static int methodOffset(final List<MethodName> vTable, final MethodName method) {
         final int base = vTable.indexOf(method);
         if (base != -1) {
-            return base + 4; // adjust for pointer to vtable
+            return base * 4;
         } else {
             return -1;
         }
@@ -369,7 +369,7 @@ public class MIPSCodeGenerator {
         if (hasVtableEntries(stmt.name)) {
             final MIPSRegister t0 = MIPSRegister.T0;
             add(new La(t0, vtableLabel(stmt.name)));
-            add(new Sw(MIPSRegister.V0, 0, t0));
+            add(new Sw(t0, 0, MIPSRegister.V0));
         }
         
         // put this address into it's place on the stack
@@ -424,7 +424,8 @@ public class MIPSCodeGenerator {
             // index into the table wherever this method is
             final int offset = methodOffset(vtableMethodOffsets.get(stmt.getOnClass()), stmt.name);
             assert(offset != -1);
-            add(new Lw(t0, offset * 4, t0));
+            add(new MIPSComment("vtable offset calculation"));
+            add(new Lw(t0, offset, t0));
             add(new Jalr(t0));
         } else {
             // non-virtual calls behave as normal function calls
