@@ -43,7 +43,12 @@ public class MIPSCodeGenerator {
 
     // returns -1 if it's not in there
     public static int methodOffset(final List<MethodName> vTable, final MethodName method) {
-        return vTable.indexOf(method);
+        final int base = vTable.indexOf(method);
+        if (base != -1) {
+            return base + 4; // adjust for pointer to vtable
+        } else {
+            return -1;
+        }
     }
     
     private void computeVTableMethodOffsetsFor(final ClassDefinition def) {
@@ -92,16 +97,33 @@ public class MIPSCodeGenerator {
         add(new Addi(sp, sp, 4));
     } // pop
 
+    public boolean hasVtableEntries(final ClassName className) {
+        return !vtableMethodOffsets.get(className).isEmpty();
+    }
+    
     // each variable can hold either an int (4 bytes), or a reference to a class (4 bytes)
-    public int sizeofClass(final ClassName className) {
+    public int sizeofClassWithoutVTable(final ClassName className) {
         final ClassDefinition def = classes.get(className);
-        final int parentSize = (def.extendsName == null) ? 0 : sizeofClass(def.extendsName);
+        final int parentSize = (def.extendsName == null) ? 0 : sizeofClassWithoutVTable(def.extendsName);
         return parentSize + def.instanceVariables.length * 4;
     }
 
+    public int sizeofClass(final ClassName className) {
+        final int vtableAdd = (hasVtableEntries(className)) ? 4 : 0;
+        return sizeofClassWithoutVTable(className) + vtableAdd;
+    }
+    
     // returns -1 if this class doesn't contain this field
     private int selfFieldOffset(final ClassDefinition def, final Variable field) {
         int offset = 0;
+        if (hasVtableEntries(def.myName) &&
+            (def.extendsName == null || !hasVtableEntries(def.extendsName))) {
+            // Account for the pointer to the vtable.  We only
+            // pay this cost if we have a vtable and our parent hasn't
+            // already paid the cost.
+            offset = 4;
+        }
+            
         for (final VarDec dec : def.instanceVariables) {
             if (dec.variable.equals(field)) {
                 return offset;
@@ -207,6 +229,10 @@ public class MIPSCodeGenerator {
     public static MIPSLabel methodLabel(final ClassName forClass,
                                         final MethodName forMethod) {
         return new MIPSLabel(forClass.name + "_" + forMethod.name);
+    }
+
+    public static MIPSLabel vtableLabel(final ClassName forClass) {
+        return new MIPSLabel("$" + forClass.name + "_vtable");
     }
     
     public void compileParams(final Exp[] params, final MIPSRegister temp) {
@@ -318,7 +344,6 @@ public class MIPSCodeGenerator {
         
     public void compileMethod(final ClassName forClass,
                               final MethodDefinition method) {
-        assert(!method.isVirtual); // TODO
         compileFunction(methodLabel(forClass, method.name),
                         forClass,
                         method.params,
@@ -340,6 +365,13 @@ public class MIPSCodeGenerator {
         add(new Li(MIPSRegister.V0, 9));
         add(new Syscall());
 
+        // if we have a vtable, add a pointer to it
+        if (hasVtableEntries(stmt.name)) {
+            final MIPSRegister t0 = MIPSRegister.T0;
+            add(new La(t0, vtableLabel(stmt.name)));
+            add(new Sw(MIPSRegister.V0, 0, t0));
+        }
+        
         // put this address into it's place on the stack
         push(MIPSRegister.V0);
         variables.pushVariable(stmt.vardec.variable,
@@ -373,6 +405,7 @@ public class MIPSCodeGenerator {
     
     public void compileMethodCallStmt(final MethodCallStmt stmt) {
         final MIPSRegister t0 = MIPSRegister.T0;
+        final MIPSRegister t1 = MIPSRegister.T1;
         
         // this is always first
         final VariableTableResetPoint resetPoint = variables.makeResetPoint();
@@ -381,20 +414,22 @@ public class MIPSCodeGenerator {
         variables.pushDummy(4);
         
         // put parameters on the stack
-        compileParams(stmt.params, t0);
+        compileParams(stmt.params, t1);
 
         final FindMethodResult find = findMethod(stmt.getOnClass(), stmt.name);
-        final MIPSLabel jumpTo;
         if (find.isVirtual) {
             // virtual calls need the vtable
-            assert(false); // TODO
-            jumpTo = null;
+            // pointer to vtable is first value in the object
+            add(new Lw(t0, 0, t0));
+            // index into the table wherever this method is
+            final int offset = methodOffset(vtableMethodOffsets.get(stmt.getOnClass()), stmt.name);
+            assert(offset != -1);
+            add(new Lw(t0, offset * 4, t0));
+            add(new Jalr(t0));
         } else {
             // non-virtual calls behave as normal function calls
-            jumpTo = methodLabel(stmt.getOnClass(), stmt.name);
+            add(new Jal(methodLabel(stmt.getOnClass(), stmt.name)));
         }
-
-        add(new Jal(jumpTo));
 
         // make space for the variable
         variables.resetTo(resetPoint);
@@ -410,7 +445,7 @@ public class MIPSCodeGenerator {
 
         // print a newline
         add(new Li(MIPSRegister.V0, 4));
-        add(new La(MIPSRegister.A0, "newline"));
+        add(new La(MIPSRegister.A0, new MIPSLabel("newline")));
         add(new Syscall());
     }
 
@@ -491,23 +526,53 @@ public class MIPSCodeGenerator {
         }
     }
 
+    private List<MIPSEntry> compileVTable(final ClassName forClass,
+                                          final List<MethodName> methodOffsets) {
+        assert(!methodOffsets.isEmpty());
+        final List<MIPSEntry> result = new ArrayList<MIPSEntry>();
+        
+        result.add(vtableLabel(forClass));
+        for (final MethodName method : methodOffsets) {
+            final FindMethodResult find = findMethod(forClass, method);
+            final MIPSLabel label = methodLabel(find.providesImplementation, method);
+            result.add(new MIPSWordLabel(label));
+        }
+
+        return result;
+    }
+    
     private void mainEnd() {
         // exit
         add(new Li(MIPSRegister.V0, 10));
         add(new Syscall());
     } // mainEnd
+
+    public static void outputEntries(final List<MIPSEntry> entries,
+                                     final PrintWriter output) throws IOException {
+        for (final MIPSEntry entry : entries) {
+            output.println(entry.toString());
+        }
+    }
+    
+    private void writeData(final PrintWriter output) throws IOException {
+        output.println(".data");
+        output.println("newline:");
+        output.println(MIPSInstruction.INDENT + ".asciiz \"\\n\"");
+        for (final Map.Entry<ClassName, List<MethodName>> entry : vtableMethodOffsets.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                final List<MIPSEntry> vtable = compileVTable(entry.getKey(), entry.getValue());
+                outputEntries(vtable, output);
+            }
+        }
+    }
     
     public void writeCompleteFile(final File file) throws IOException {
         final PrintWriter output =
             new PrintWriter(new BufferedWriter(new FileWriter(file)));
         try {
-            output.println(".data");
-            output.println("newline:");
-            output.println(MIPSInstruction.INDENT + ".asciiz \"\\n\"");
+            writeData(output);
             output.println(".text");
-            for (final MIPSEntry entry : entries) {
-                output.println(entry.toString());
-            }
+            outputEntries(entries, output);
         } finally {
             output.close();
         }

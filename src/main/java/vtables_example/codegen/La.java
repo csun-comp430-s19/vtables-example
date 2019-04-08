@@ -2,10 +2,10 @@ package vtables_example.codegen;
 
 public class La implements MIPSInstruction {
     public final MIPSRegister rd;
-    public final String label;
+    public final MIPSLabel label;
 
     public La(final MIPSRegister rd,
-              final String label) {
+              final MIPSLabel label) {
         this.rd = rd;
         this.label = label;
     }
@@ -13,7 +13,7 @@ public class La implements MIPSInstruction {
     public String toString() {
         return (MIPSInstruction.INDENT + "la " +
                 rd.toString() + ", " +
-                label);
+                label.name);
     } // toString
 
     public int hashCode() {
