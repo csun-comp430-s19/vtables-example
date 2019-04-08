@@ -73,6 +73,26 @@ public class MIPSCodeGenerator {
         return 0;
     }
 
+    public void putLhsAddressIntoRegister(final MIPSRegister destination,
+                                          final Lhs lhs) {
+        if (lhs instanceof VariableLhs) {
+            final int offset = variables.variableOffset(((VariableLhs)lhs).variable);
+            add(new Addi(destination, MIPSRegister.SP, offset));
+        } else if (lhs instanceof FieldAccessLhs) {
+            final FieldAccessLhs asField = (FieldAccessLhs)lhs;
+            final int offsetFromField = fieldOffset(asField.getLhsClass(),
+                                                    asField.field);
+            putLhsAddressIntoRegister(destination, asField.lhs);
+            add(new Lw(destination, offsetFromField, destination));
+        } else if (lhs instanceof ThisLhs) {
+            // direct assignment to this is disallowed (typechecker makes sure of this)
+            final int offset = variables.variableOffset(THIS_VARIABLE);
+            add(new Addi(destination, MIPSRegister.SP, offset));
+        } else {
+            assert(false);
+        }
+    }
+
     public void compileVariableAccess(final Variable variable, final MIPSRegister resultIn) {
         final int offset = variables.variableOffset(variable);
         add(new Lw(resultIn, offset, MIPSRegister.SP));
@@ -304,7 +324,11 @@ public class MIPSCodeGenerator {
     }
 
     public void compileAssignStmt(final AssignStmt stmt) {
-        assert(false);
+        final MIPSRegister t0 = MIPSRegister.T0;
+        final MIPSRegister t1 = MIPSRegister.T1;
+        compileExpression(stmt.exp, t0);
+        putLhsAddressIntoRegister(t1, stmt.lhs);
+        add(new Sw(t0, 0, t1));
     }
 
     public void compileSuperStmt(final SuperStmt stmt) {
