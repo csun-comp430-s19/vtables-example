@@ -13,6 +13,55 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 public class TypecheckerClassTest {
+    // ---BEGIN CONSTANTS---
+    // class Base {
+    //   int b;
+    //   init(int b) {
+    //     this.b = b;
+    //   }
+    // }
+    public static final ClassName BASE_CLASS_NAME =
+        new ClassName("Base");
+    public static final ClassDefinition BASE_CLASS =
+        new ClassDefinition(BASE_CLASS_NAME,
+                            null,
+                            new VarDec[] {
+                                new VarDec(new IntType(), new Variable("b"))
+                            },
+                            new Constructor(new VarDec[] {
+                                    new VarDec(new IntType(), new Variable("b"))
+                                },
+                                new AssignStmt(new FieldAccessLhs(new ThisLhs(),
+                                                                  new Variable("b")),
+                                               new LhsExp(new VariableLhs(new Variable("b"))))),
+                            new MethodDefinition[0]);
+
+    // class Sub extends Base {
+    //   int s;
+    //   init(int x, int y) {
+    //     super(x);
+    //     this.s = y;
+    //   }
+    // }
+    public static final ClassName SUB_CLASS_NAME =
+        new ClassName("Sub");
+    public static final ClassDefinition SUB_CLASS =
+        new ClassDefinition(SUB_CLASS_NAME,
+                            BASE_CLASS_NAME,
+                            new VarDec[] {
+                                new VarDec(new IntType(), new Variable("s"))
+                            },
+                            new Constructor(new VarDec[] {
+                                    new VarDec(new IntType(), new Variable("x")),
+                                    new VarDec(new IntType(), new Variable("y"))
+                                },
+                                stmts(new SuperStmt(new Exp[] { new LhsExp(new VariableLhs(new Variable("x"))) }),
+                                      new AssignStmt(new FieldAccessLhs(new ThisLhs(),
+                                                                        new Variable("s")),
+                                                     new LhsExp(new VariableLhs(new Variable("y")))))),
+                            new MethodDefinition[0]);
+    // ---END CONSTANTS---
+    
     public void assertWellTyped(final Program program) {
         try {
             Typechecker.typecheckProgram(program);
@@ -84,6 +133,26 @@ public class TypecheckerClassTest {
         assertIllTyped(mkProgram(stmt, EMPTY_CLASS, FIELD_CLASS));
     }
 
+    @Test
+    public void testWellTypedNewStmtSubtyping() {
+        final NewStmt stmt =
+            new NewStmt(new VarDec(new ClassType(BASE_CLASS_NAME),
+                                   new Variable("x")),
+                        SUB_CLASS_NAME,
+                        new Exp[] { new IntExp(0), new IntExp(1) });
+        assertWellTyped(mkProgram(stmt, BASE_CLASS, SUB_CLASS));
+    }
+
+    @Test
+    public void testIllTypedNewStmtSubtyping() {
+        final NewStmt stmt =
+            new NewStmt(new VarDec(new ClassType(SUB_CLASS_NAME),
+                                   new Variable("x")),
+                        BASE_CLASS_NAME,
+                        new Exp[] { new IntExp(0), new IntExp(1) });
+        assertWellTyped(mkProgram(stmt, BASE_CLASS, SUB_CLASS));
+    }
+    
     @Test
     public void testWellTypedPrintStmt() {
         assertWellTyped(mkProgram(new PrintStmt(new IntExp(0))));
