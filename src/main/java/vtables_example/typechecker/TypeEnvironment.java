@@ -1,0 +1,51 @@
+package vtables_example.typechecker;
+
+import vtables_example.syntax.*;
+
+import java.util.Map;
+import java.util.HashMap;
+
+public class TypeEnvironment {
+    private final Map<Variable, Type> variables;
+    private final ClassName thisClass; // null if outside of method
+    
+    public TypeEnvironment(final Map<Variable, Type> variables,
+                           final ClassName thisClass) {
+        this.variables = variables;
+        this.thisClass = thisClass;
+    }
+
+    public Type thisType() throws TypeErrorException {
+        if (thisClass == null) {
+            throw new TypeErrorException("this used outside of class");
+        } else {
+            return new ClassType(thisClass);
+        }
+    }
+    
+    public Type lookup(final Variable variable) throws TypeErrorException {
+        final Type result = variables.get(variable);
+        if (result == null) {
+            throw new TypeErrorException("No such variable: " + variable);
+        } else {
+            return result;
+        }
+    }
+
+    public TypeEnvironment addVariable(final Variable variable,
+                                       final Type type) throws TypeErrorException {
+        if (!variables.containsKey(variable)) {
+            final Map<Variable, Type> newVariables = new HashMap<Variable, Type>(variables);
+            newVariables.put(variable, type);
+            return new TypeEnvironment(newVariables, thisClass);
+        } else {
+            throw new TypeErrorException("Redefinition of variable: " + variable);
+        }
+    }
+
+    public TypeEnvironment addVariable(final VarDec vardec) throws TypeErrorException {
+        return addVariable(vardec.variable, vardec.type);
+    }
+}
+
+    
