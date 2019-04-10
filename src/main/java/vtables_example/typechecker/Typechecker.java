@@ -239,17 +239,19 @@ public class Typechecker {
         return true;
     } // containsNoSupers
     
-    public static void superReturnOkInConstructor(final Stmt stmt) throws TypeErrorException {
+    public static void superReturnOkInConstructor(final boolean isBaseClass,
+                                                  final Stmt stmt) throws TypeErrorException {
         final List<Stmt> statements = extractSequenceStmts(stmt);
-        if (statements.size() == 0 ||
-            !(statements.get(0) instanceof SuperStmt)) {
-            throw new TypeErrorException("super needs to be first in constructor");
+        if (isBaseClass && !containsNoSupers(statements, 0)) {
+            throw new TypeErrorException("base classes cannot contain super");
+        }
+        if (!isBaseClass &&
+            (statements.size() == 0 ||
+             !(statements.get(0) instanceof SuperStmt))) {
+            throw new TypeErrorException("super needs to be first in subclass constructor");
         }
         if (!containsNoReturns(statements, statements.size() - 1)) {
             throw new TypeErrorException("return in constructor");
-        }
-        if (!containsNoSupers(statements, 1)) {
-            throw new TypeErrorException("multiple supers in constructor");
         }
     } // superReturnOkInConstructor
 
@@ -365,8 +367,9 @@ public class Typechecker {
     
     public void typecheckConstructor(final ClassName onClass,
                                      final Constructor constructor) throws TypeErrorException {
+        final ClassDefinition classDef = getClass(onClass);
         noDuplicates(constructor.params);
-        superReturnOkInConstructor(constructor.body);
+        superReturnOkInConstructor(classDef.extendsName == null, constructor.body);
         typecheckStmt(TypeEnvironment.initialEnv(constructor.params, onClass),
                       null,
                       getSuperParams(onClass),
