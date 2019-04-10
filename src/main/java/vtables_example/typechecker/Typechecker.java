@@ -395,7 +395,7 @@ public class Typechecker {
                 throw new TypeErrorException("Cyclic inheritance on " + className);
             }
             seen.add(current);
-            current = getClass(className).extendsName;
+            current = getClass(current).extendsName;
         }
     } // noCyclicInheritance
 
