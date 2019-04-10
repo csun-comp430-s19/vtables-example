@@ -1,6 +1,7 @@
 package vtables_example.codegen;
 
 import vtables_example.syntax.*;
+import static vtables_example.typechecker.TypecheckerClassTest.stmts;
 
 import java.io.IOException;
 
@@ -29,16 +30,6 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         assertResult(expected,
                      new Program(classes, entryPoint),
                      makeMapping(classes));
-    }
-
-    public static Stmt stmts(final Stmt... stmts) {
-        assert(stmts.length > 0);
-        Stmt result = stmts[stmts.length - 1];
-
-        for (int index = stmts.length - 2; index >= 0; index--) {
-            result = new SequenceStmt(stmts[index], result);
-        }
-        return result;
     }
 
     @Test
