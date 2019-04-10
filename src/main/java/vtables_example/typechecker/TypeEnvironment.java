@@ -46,6 +46,18 @@ public class TypeEnvironment {
     public TypeEnvironment addVariable(final VarDec vardec) throws TypeErrorException {
         return addVariable(vardec.variable, vardec.type);
     }
-}
 
-    
+    public static Map<Variable, Type> variableMapping(final VarDec[] params) throws TypeErrorException {
+        Typechecker.noDuplicates(params);
+        final Map<Variable, Type> result = new HashMap<Variable, Type>();
+        for (final VarDec param : params) {
+            result.put(param.variable, param.type);
+        }
+        return result;
+    } // variableMapping
+
+    public static TypeEnvironment initialEnv(final VarDec[] params,
+                                             final ClassName onClass) throws TypeErrorException {
+        return new TypeEnvironment(variableMapping(params), onClass);
+    } // initialEnv
+}

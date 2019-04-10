@@ -343,15 +343,6 @@ public class Typechecker {
         }
     } // virtualOk
 
-    public static Map<Variable, Type> variableMapping(final VarDec[] params) throws TypeErrorException {
-        noDuplicates(params);
-        final Map<Variable, Type> result = new HashMap<Variable, Type>();
-        for (final VarDec param : params) {
-            result.put(param.variable, param.type);
-        }
-        return result;
-    } // variableMapping
-
     public VarDec[] getSuperParams(final ClassName forClass) throws TypeErrorException {
         final ClassDefinition classDef = getClass(forClass);
         if (classDef.extendsName != null) {
@@ -366,21 +357,17 @@ public class Typechecker {
         virtualOk(onClass, methodDef.isVirtual, methodDef.name);
         noDuplicates(methodDef.params);
         superReturnOkInMethod(methodDef.body);
-        typecheckStmt(initialEnv(methodDef.params, onClass),
+        typecheckStmt(TypeEnvironment.initialEnv(methodDef.params, onClass),
                       methodDef.returnType,
                       null,
                       methodDef.body);
     } // typecheckMethod
-
-    public static TypeEnvironment initialEnv(final VarDec[] params, final ClassName onClass) throws TypeErrorException {
-        return new TypeEnvironment(variableMapping(params), onClass);
-    } // initialEnv
     
     public void typecheckConstructor(final ClassName onClass,
                                      final Constructor constructor) throws TypeErrorException {
         noDuplicates(constructor.params);
         superReturnOkInConstructor(constructor.body);
-        typecheckStmt(initialEnv(constructor.params, onClass),
+        typecheckStmt(TypeEnvironment.initialEnv(constructor.params, onClass),
                       null,
                       getSuperParams(onClass),
                       constructor.body);
@@ -464,7 +451,7 @@ public class Typechecker {
     public static void typecheckProgram(final Program program) throws TypeErrorException {
         final Typechecker typechecker = new Typechecker(classMapping(program.classes));
         typechecker.typecheckAllClasses();
-        typechecker.typecheckStmt(initialEnv(new VarDec[0], null),
+        typechecker.typecheckStmt(TypeEnvironment.initialEnv(new VarDec[0], null),
                                   null,
                                   null,
                                   program.entryPoint);
