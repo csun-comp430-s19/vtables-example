@@ -150,7 +150,7 @@ public class TypecheckerClassTest {
                                    new Variable("x")),
                         BASE_CLASS_NAME,
                         new Exp[] { new IntExp(0), new IntExp(1) });
-        assertWellTyped(mkProgram(stmt, BASE_CLASS, SUB_CLASS));
+        assertIllTyped(mkProgram(stmt, BASE_CLASS, SUB_CLASS));
     }
     
     @Test
