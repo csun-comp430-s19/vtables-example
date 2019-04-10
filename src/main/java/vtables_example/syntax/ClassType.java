@@ -1,7 +1,7 @@
 package vtables_example.syntax;
 
 public class ClassType implements Type {
-    final ClassName name;
+    public final ClassName name;
 
     public ClassType(final ClassName name) {
         this.name = name;
