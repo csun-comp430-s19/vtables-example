@@ -16,6 +16,7 @@ public class TypecheckerClassTest {
     // ---BEGIN CONSTANTS---
     public static final ClassName BASE_CLASS_NAME = new ClassName("Base");
     public static final ClassName SUB_CLASS_NAME = new ClassName("Sub");
+    public static final ClassName WITH_METHOD_CLASS_NAME = new ClassName("WithMethod");
     // ---END CONSTANTS---
 
     // Cannot be constants, as the typechecker will fill in types for certain parts.
@@ -161,4 +162,72 @@ public class TypecheckerClassTest {
     public void testWellTypedPrintStmt() {
         assertWellTyped(mkProgram(new PrintStmt(new IntExp(0))));
     }
+
+    // class WithMethod {
+    //   int w;
+    //   init(int w) {
+    //     this.w = w;
+    //   }
+    //   int getW() {
+    //     return this.w;
+    //   }
+    // }
+    public static ClassDefinition withMethod() {
+        return new ClassDefinition(WITH_METHOD_CLASS_NAME,
+                                   null,
+                                   new VarDec[] { new VarDec(new IntType(), new Variable("w")) },
+                                   new Constructor(new VarDec[] { new VarDec(new IntType(), new Variable("w")) },
+                                                   new AssignStmt(new FieldAccessLhs(new ThisLhs(),
+                                                                                     new Variable("w")),
+                                                                  new LhsExp(new VariableLhs(new Variable("w"))))),
+                                   new MethodDefinition[] {
+                                       new MethodDefinition(false,
+                                                            new IntType(),
+                                                            new MethodName("getW"),
+                                                            new VarDec[0],
+                                                            new ReturnStmt(new LhsExp(new FieldAccessLhs(new ThisLhs(),
+                                                                                                         new Variable("w")))))
+                                   });
+    }
+
+    @Test
+    public void testWellTypedMethodCall() {
+        assertWellTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME),
+                                                               new Variable("w")),
+                                                    WITH_METHOD_CLASS_NAME,
+                                                    new Exp[] { new IntExp(0) }),
+                                        new MethodCallStmt(new VarDec(new IntType(), new Variable("x")),
+                                                           new LhsExp(new VariableLhs(new Variable("w"))),
+                                                           new MethodName("getW"),
+                                                           new Exp[0])),
+                                  withMethod()));
+    }
+
+    @Test
+    public void testIllTypedMethodCallWrongParams() {
+        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME),
+                                                              new Variable("w")),
+                                                   WITH_METHOD_CLASS_NAME,
+                                                   new Exp[] { new IntExp(0) }),
+                                       new MethodCallStmt(new VarDec(new IntType(), new Variable("x")),
+                                                          new LhsExp(new VariableLhs(new Variable("w"))),
+                                                          new MethodName("getW"),
+                                                          new Exp[] { new IntExp(0) })),
+                                 withMethod()));
+    }
+
+    @Test
+    public void testIllTypedMethodCallWrongReturnType() {
+        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME),
+                                                              new Variable("w")),
+                                                   WITH_METHOD_CLASS_NAME,
+                                                   new Exp[] { new IntExp(0) }),
+                                       new MethodCallStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME), new Variable("x")),
+                                                          new LhsExp(new VariableLhs(new Variable("w"))),
+                                                          new MethodName("getW"),
+                                                          new Exp[0])),
+                                 withMethod()));
+    }
+
+    // TODO: most tests are missing, particularly those dealing with ill-typed programs
 } // TypecheckerClassTest
