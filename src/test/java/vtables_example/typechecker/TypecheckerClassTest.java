@@ -22,7 +22,7 @@ public class TypecheckerClassTest {
     // Cannot be constants, as the typechecker will fill in types for certain parts.
     // It expects that these types have not been filled in before.
 
-    // class Base {
+    // class Base<> {
     //   int b;
     //   init(int b) {
     //     this.b = b;
@@ -30,6 +30,7 @@ public class TypecheckerClassTest {
     // }
     public static ClassDefinition baseClass() {
         return new ClassDefinition(BASE_CLASS_NAME,
+                                   new TypeVariable[0],
                                    null,
                                    new VarDec[] {
                                        new VarDec(new IntType(), new Variable("b"))
@@ -43,7 +44,7 @@ public class TypecheckerClassTest {
                                    new MethodDefinition[0]);
     }
 
-    // class Sub extends Base {
+    // class Sub<> extends Base<> {
     //   int s;
     //   init(int x, int y) {
     //     super(x);
@@ -52,7 +53,8 @@ public class TypecheckerClassTest {
     // }
     public static ClassDefinition subClass() {
         return new ClassDefinition(SUB_CLASS_NAME,
-                                   BASE_CLASS_NAME,
+                                   new TypeVariable[0],
+                                   new Extends(BASE_CLASS_NAME, new Type[0]),
                                    new VarDec[] {
                                        new VarDec(new IntType(), new Variable("s"))
                                    },
@@ -101,9 +103,10 @@ public class TypecheckerClassTest {
     @Test
     public void testWellTypedNewStmt() {
         final NewStmt stmt =
-            new NewStmt(new VarDec(new ClassType(EMPTY_CLASS_NAME),
+            new NewStmt(new VarDec(new ClassType(EMPTY_CLASS_NAME, new Type[0]),
                                    new Variable("x")),
                         EMPTY_CLASS_NAME,
+                        new Type[0],
                         new Exp[0]);
         assertWellTyped(mkProgram(stmt, EMPTY_CLASS));
     }
@@ -111,9 +114,10 @@ public class TypecheckerClassTest {
     @Test
     public void testIllTypedNewStmtNoSuchClass() {
         final NewStmt stmt =
-            new NewStmt(new VarDec(new ClassType(EMPTY_CLASS_NAME),
+            new NewStmt(new VarDec(new ClassType(EMPTY_CLASS_NAME, new Type[0]),
                                    new Variable("x")),
                         EMPTY_CLASS_NAME,
+                        new Type[0],
                         new Exp[] { new IntExp(0) });
         assertIllTyped(mkProgram(stmt));
     }
@@ -121,9 +125,10 @@ public class TypecheckerClassTest {
     @Test
     public void testIllTypedNewStmtWrongParams() {
         final NewStmt stmt =
-            new NewStmt(new VarDec(new ClassType(EMPTY_CLASS_NAME),
+            new NewStmt(new VarDec(new ClassType(EMPTY_CLASS_NAME, new Type[0]),
                                    new Variable("x")),
                         EMPTY_CLASS_NAME,
+                        new Type[0],
                         new Exp[] { new IntExp(0) });
         assertIllTyped(mkProgram(stmt, EMPTY_CLASS));
     }
@@ -131,9 +136,10 @@ public class TypecheckerClassTest {
     @Test
     public void testIllTypedNewStmtAssignToIncompatible() {
         final NewStmt stmt =
-            new NewStmt(new VarDec(new ClassType(FIELD_CLASS_NAME),
+            new NewStmt(new VarDec(new ClassType(FIELD_CLASS_NAME, new Type[0]),
                                    new Variable("x")),
                         EMPTY_CLASS_NAME,
+                        new Type[0],
                         new Exp[] { new IntExp(0) });
         assertIllTyped(mkProgram(stmt, EMPTY_CLASS, FIELD_CLASS));
     }
@@ -141,9 +147,10 @@ public class TypecheckerClassTest {
     @Test
     public void testWellTypedNewStmtSubtyping() {
         final NewStmt stmt =
-            new NewStmt(new VarDec(new ClassType(BASE_CLASS_NAME),
+            new NewStmt(new VarDec(new ClassType(BASE_CLASS_NAME, new Type[0]),
                                    new Variable("x")),
                         SUB_CLASS_NAME,
+                        new Type[0],
                         new Exp[] { new IntExp(0), new IntExp(1) });
         assertWellTyped(mkProgram(stmt, baseClass(), subClass()));
     }
@@ -151,9 +158,10 @@ public class TypecheckerClassTest {
     @Test
     public void testIllTypedNewStmtSubtyping() {
         final NewStmt stmt =
-            new NewStmt(new VarDec(new ClassType(SUB_CLASS_NAME),
+            new NewStmt(new VarDec(new ClassType(SUB_CLASS_NAME, new Type[0]),
                                    new Variable("x")),
                         BASE_CLASS_NAME,
+                        new Type[0],
                         new Exp[] { new IntExp(0), new IntExp(1) });
         assertIllTyped(mkProgram(stmt, baseClass(), subClass()));
     }
@@ -163,17 +171,18 @@ public class TypecheckerClassTest {
         assertWellTyped(mkProgram(new PrintStmt(new IntExp(0))));
     }
 
-    // class WithMethod {
+    // class WithMethod<> {
     //   int w;
     //   init(int w) {
     //     this.w = w;
     //   }
-    //   int getW() {
+    //   <> int getW() {
     //     return this.w;
     //   }
     // }
     public static ClassDefinition withMethod() {
         return new ClassDefinition(WITH_METHOD_CLASS_NAME,
+                                   new TypeVariable[0],
                                    null,
                                    new VarDec[] { new VarDec(new IntType(), new Variable("w")) },
                                    new Constructor(new VarDec[] { new VarDec(new IntType(), new Variable("w")) },
@@ -182,6 +191,7 @@ public class TypecheckerClassTest {
                                                                   new LhsExp(new VariableLhs(new Variable("w"))))),
                                    new MethodDefinition[] {
                                        new MethodDefinition(false,
+                                                            new TypeVariable[0],
                                                             new IntType(),
                                                             new MethodName("getW"),
                                                             new VarDec[0],
@@ -192,39 +202,46 @@ public class TypecheckerClassTest {
 
     @Test
     public void testWellTypedMethodCall() {
-        assertWellTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME),
+        assertWellTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME, new Type[0]),
                                                                new Variable("w")),
                                                     WITH_METHOD_CLASS_NAME,
+                                                    new Type[0],
                                                     new Exp[] { new IntExp(0) }),
                                         new MethodCallStmt(new VarDec(new IntType(), new Variable("x")),
                                                            new LhsExp(new VariableLhs(new Variable("w"))),
                                                            new MethodName("getW"),
+                                                           new Type[0],
                                                            new Exp[0])),
                                   withMethod()));
     }
 
     @Test
     public void testIllTypedMethodCallWrongParams() {
-        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME),
+        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME, new Type[0]),
                                                               new Variable("w")),
                                                    WITH_METHOD_CLASS_NAME,
+                                                   new Type[0],
                                                    new Exp[] { new IntExp(0) }),
                                        new MethodCallStmt(new VarDec(new IntType(), new Variable("x")),
                                                           new LhsExp(new VariableLhs(new Variable("w"))),
                                                           new MethodName("getW"),
+                                                          new Type[0],
                                                           new Exp[] { new IntExp(0) })),
                                  withMethod()));
     }
 
     @Test
     public void testIllTypedMethodCallWrongReturnType() {
-        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME),
+        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME, new Type[0]),
                                                               new Variable("w")),
                                                    WITH_METHOD_CLASS_NAME,
+                                                   new Type[0],
                                                    new Exp[] { new IntExp(0) }),
-                                       new MethodCallStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME), new Variable("x")),
+                                       new MethodCallStmt(new VarDec(new ClassType(WITH_METHOD_CLASS_NAME, new Type[0]),
+                                                                     new Variable("x")),
                                                           new LhsExp(new VariableLhs(new Variable("w"))),
                                                           new MethodName("getW"),
+                                                          new Type[0],
                                                           new Exp[0])),
                                  withMethod()));
     }

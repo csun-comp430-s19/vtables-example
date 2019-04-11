@@ -58,9 +58,9 @@ public class MIPSCodeGenerator {
 
             // the base of my table is the parent's table
             final List<MethodName> parentOffsets;
-            if (def.extendsName != null) {
-                computeVTableMethodOffsetsFor(classes.get(def.extendsName));
-                parentOffsets = vtableMethodOffsets.get(def.extendsName);
+            if (def.doesExtend != null) {
+                computeVTableMethodOffsetsFor(classes.get(def.doesExtend.extendsName));
+                parentOffsets = vtableMethodOffsets.get(def.doesExtend.extendsName);
             } else {
                 parentOffsets = new ArrayList<MethodName>();
             }
@@ -104,7 +104,7 @@ public class MIPSCodeGenerator {
     // each variable can hold either an int (4 bytes), or a reference to a class (4 bytes)
     public int sizeofClassWithoutVTable(final ClassName className) {
         final ClassDefinition def = classes.get(className);
-        final int parentSize = (def.extendsName == null) ? 0 : sizeofClassWithoutVTable(def.extendsName);
+        final int parentSize = (def.doesExtend == null) ? 0 : sizeofClassWithoutVTable(def.doesExtend.extendsName);
         return parentSize + def.instanceVariables.length * 4;
     }
 
@@ -117,7 +117,7 @@ public class MIPSCodeGenerator {
     private int selfFieldOffset(final ClassDefinition def, final Variable field) {
         int offset = 0;
         if (hasVtableEntries(def.myName) &&
-            (def.extendsName == null || !hasVtableEntries(def.extendsName))) {
+            (def.doesExtend == null || !hasVtableEntries(def.doesExtend.extendsName))) {
             // Account for the pointer to the vtable.  We only
             // pay this cost if we have a vtable and our parent hasn't
             // already paid the cost.
@@ -136,9 +136,9 @@ public class MIPSCodeGenerator {
     private FieldOffsetResult fieldOffsetHelper(final ClassName className,
                                                 final Variable variable) {
         final ClassDefinition def = classes.get(className);
-        if (def.extendsName != null) {
+        if (def.doesExtend != null) {
             // see if my parent has it
-            final FieldOffsetResult fromParent = fieldOffsetHelper(def.extendsName, variable);
+            final FieldOffsetResult fromParent = fieldOffsetHelper(def.doesExtend.extendsName, variable);
             if (fromParent.found) {
                 return fromParent;
             } else {
@@ -148,7 +148,7 @@ public class MIPSCodeGenerator {
                     return new FieldOffsetResult(false, 0);
                 } else {
                     // I do have it
-                    return new FieldOffsetResult(true, sizeofClass(def.extendsName) + fromSelf);
+                    return new FieldOffsetResult(true, sizeofClass(def.doesExtend.extendsName) + fromSelf);
                 }
             }
         } else {
@@ -301,23 +301,16 @@ public class MIPSCodeGenerator {
         assert(variables.isEmpty());
 
         // this is always first
-        final ClassType classType = new ClassType(forClass);
-        variables.pushVariable(THIS_VARIABLE,
-                               classType,
-                               4);
+        variables.pushVariable(THIS_VARIABLE, 4);
 
         // extract parameters
         for (final VarDec param : params) {
-            variables.pushVariable(param.variable,
-                                   param.type,
-                                   4);
+            variables.pushVariable(param.variable, 4);
         }
 
         // return address follows parameters
         push(MIPSRegister.RA);
-        variables.pushVariable(RA_VARIABLE,
-                               classType, // meaningless
-                               4);
+        variables.pushVariable(RA_VARIABLE, 4);
     }
 
     private void callExitSetup() {
@@ -374,9 +367,7 @@ public class MIPSCodeGenerator {
         
         // put this address into it's place on the stack
         push(MIPSRegister.V0);
-        variables.pushVariable(stmt.vardec.variable,
-                               stmt.vardec.type,
-                               4);
+        variables.pushVariable(stmt.vardec.variable, 4);
 
         // first parameter is always this
         final VariableTableResetPoint resetPoint = variables.makeResetPoint();
@@ -400,7 +391,7 @@ public class MIPSCodeGenerator {
         }
 
         // if I don't have it, my parent should (typechecker ensures this)
-        return findMethod(def.extendsName, methodName);
+        return findMethod(def.doesExtend.extendsName, methodName);
     }
     
     public void compileMethodCallStmt(final MethodCallStmt stmt) {
@@ -435,9 +426,7 @@ public class MIPSCodeGenerator {
         // make space for the variable
         variables.resetTo(resetPoint);
         push(MIPSRegister.V0);
-        variables.pushVariable(stmt.vardec.variable,
-                               stmt.vardec.type,
-                               4);
+        variables.pushVariable(stmt.vardec.variable, 4);
     }
 
     public void printA0() {
@@ -479,7 +468,7 @@ public class MIPSCodeGenerator {
     public void compileSuperStmt(final ClassName forClass, final SuperStmt stmt) {
         assert(forClass != null); // typechecker checks this
         final ClassDefinition def = classes.get(forClass);
-        assert(def.extendsName != null); // typechecker checks this
+        assert(def.doesExtend != null); // typechecker checks this
         
         // this is always first
         final VariableTableResetPoint resetPoint = variables.makeResetPoint();
@@ -492,7 +481,7 @@ public class MIPSCodeGenerator {
         compileParams(stmt.params, MIPSRegister.T0);
 
         // call superclass' constructor
-        add(new Jal(constructorLabel(def.extendsName)));
+        add(new Jal(constructorLabel(def.doesExtend.extendsName)));
         variables.resetTo(resetPoint);
     }
 

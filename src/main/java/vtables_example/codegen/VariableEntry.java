@@ -5,21 +5,17 @@ import vtables_example.syntax.Type;
 
 public class VariableEntry {
     public final Variable variable;
-    public final Type type;
     public final int size;
     
     public VariableEntry(final Variable variable,
-                         final Type type,
                          final int size) {
         this.variable = variable;
-        this.type = type;
         this.size = size;
     }
 
     public String toString() {
         return ("VariableEntry(" +
                 variable + ", " +
-                type + ", " +
                 size + ")");
     }
 
@@ -27,7 +23,6 @@ public class VariableEntry {
         if (other instanceof VariableEntry) {
             final VariableEntry otherEntry = (VariableEntry)other;
             return (variable.equals(otherEntry.variable) &&
-                    type.equals(otherEntry.type) &&
                     size == otherEntry.size);
         } else {
             return false;
@@ -36,7 +31,6 @@ public class VariableEntry {
 
     public int hashCode() {
         return (variable.hashCode() +
-                type.hashCode() +
                 size);
     }
 } // VariableEntry

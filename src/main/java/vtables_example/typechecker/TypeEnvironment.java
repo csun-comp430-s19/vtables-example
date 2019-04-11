@@ -2,24 +2,38 @@ package vtables_example.typechecker;
 
 import vtables_example.syntax.*;
 
+import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
 public class TypeEnvironment {
-    private final Map<Variable, Type> variables;
-    private final ClassName thisClass; // null if outside of method
+    private final Set<TypeVariable> inScope;     // type variables in scope
+    private final Map<Variable, Type> variables; // variables in scope
+    private final ClassType thisType;           // null if outside of method
     
-    public TypeEnvironment(final Map<Variable, Type> variables,
-                           final ClassName thisClass) {
+    public TypeEnvironment(final Set<TypeVariable> inScope,
+                           final Map<Variable, Type> variables,
+                           final ClassType thisType) {
+        this.inScope = inScope;
         this.variables = variables;
-        this.thisClass = thisClass;
+        this.thisType = thisType;
     }
 
+    public void typeInScope(final Type type) throws TypeErrorException {
+        Typechecker.typeInScope(inScope, type);
+    }
+
+    public void typesInScope(final Type[] types) throws TypeErrorException {
+        for (final Type type : types) {
+            typeInScope(type);
+        }
+    }
+    
     public Type thisType() throws TypeErrorException {
-        if (thisClass == null) {
+        if (thisType == null) {
             throw new TypeErrorException("this used outside of class");
         } else {
-            return new ClassType(thisClass);
+            return thisType;
         }
     }
     
@@ -37,7 +51,7 @@ public class TypeEnvironment {
         if (!variables.containsKey(variable)) {
             final Map<Variable, Type> newVariables = new HashMap<Variable, Type>(variables);
             newVariables.put(variable, type);
-            return new TypeEnvironment(newVariables, thisClass);
+            return new TypeEnvironment(inScope, newVariables, thisType);
         } else {
             throw new TypeErrorException("Redefinition of variable: " + variable);
         }
@@ -56,8 +70,19 @@ public class TypeEnvironment {
         return result;
     } // variableMapping
 
-    public static TypeEnvironment initialEnv(final VarDec[] params,
-                                             final ClassName onClass) throws TypeErrorException {
-        return new TypeEnvironment(variableMapping(params), onClass);
+    public static TypeEnvironment initialEnv(final Set<TypeVariable> inScope,
+                                             final VarDec[] params,
+                                             final ClassType thisType) throws TypeErrorException {
+        return new TypeEnvironment(inScope,
+                                   variableMapping(params),
+                                   thisType);
+    } // initialEnv
+    
+    public static TypeEnvironment initialEnv(final TypeVariable[] typeVariables,
+                                             final VarDec[] params,
+                                             final ClassType thisType) throws TypeErrorException {
+        return initialEnv(Typechecker.asSet(typeVariables),
+                          params,
+                          thisType);
     } // initialEnv
 }

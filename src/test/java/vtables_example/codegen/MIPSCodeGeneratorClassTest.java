@@ -34,14 +34,14 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testPrintInMethodNoParams() throws IOException {
-        // class Foo {
+        // class Foo<> {
         //   init() {}
-        //   void foo() {
+        //   <> void foo() {
         //     print(1);
         //   }
         // }
-        // Foo f = new Print();
-        // void v = f.foo();
+        // Foo<> f = new Print<>();
+        // void v = f.foo<>();
 
         final ClassName fooClass = new ClassName("Foo");
         final MethodName fooMethod = new MethodName("foo");
@@ -50,22 +50,26 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                   new Variable("v")),
                                                        new LhsExp(new VariableLhs(f)),
                                                        fooMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(fooClass);
         
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(fooClass),
+                      stmts(new NewStmt(new VarDec(new ClassType(fooClass, new Type[0]),
                                                    f),
                                         fooClass,
+                                        new Type[0],
                                         new Exp[0]),
                             call),
                       new ClassDefinition(fooClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0],
                                                           new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(false,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    fooMethod,
                                                                    new VarDec[0],
@@ -75,14 +79,14 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testPrintInMethodOneParam() throws IOException {
-        // class Foo {
+        // class Foo<> {
         //   init() {}
-        //   void foo(int x) {
+        //   <> void foo(int x) {
         //     print(x);
         //   }
         // }
-        // Foo f = new Print();
-        // void v = f.foo(1);
+        // Foo<> f = new Print<>();
+        // void v = f.foo<>(1);
 
         final ClassName fooClass = new ClassName("Foo");
         final MethodName fooMethod = new MethodName("foo");
@@ -92,24 +96,28 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                   new Variable("v")),
                                                        new LhsExp(new VariableLhs(f)),
                                                        fooMethod,
+                                                       new Type[0],
                                                        new Exp[] {
                                                            new IntExp(1)
                                                        });
         call.setOnClass(fooClass);
         
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(fooClass),
+                      stmts(new NewStmt(new VarDec(new ClassType(fooClass, new Type[0]),
                                                    f),
                                         fooClass,
+                                        new Type[0],
                                         new Exp[0]),
                             call),
                       new ClassDefinition(fooClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0],
                                                           new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(false,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    fooMethod,
                                                                    new VarDec[] {
@@ -121,17 +129,17 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testPrintInMethodInstanceVariable() throws IOException {
-        // class Foo {
+        // class Foo<> {
         //   int x;
         //   init(int x) {
         //     this.x = x;
         //   }
-        //   void foo() {
+        //   <> void foo() {
         //     print(this.x);
         //   }
         // }
-        // Foo f = new Print(1);
-        // void v = f.foo();
+        // Foo<> f = new Print<>(1);
+        // void v = f.foo<>();
 
         final ClassName fooClass = new ClassName("Foo");
         final MethodName fooMethod = new MethodName("foo");
@@ -141,6 +149,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                   new Variable("v")),
                                                        new LhsExp(new VariableLhs(f)),
                                                        fooMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(fooClass);
 
@@ -148,14 +157,16 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         lhs.setLhsClass(fooClass);
         
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(fooClass),
+                      stmts(new NewStmt(new VarDec(new ClassType(fooClass, new Type[0]),
                                                    f),
                                         fooClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(1)
                                         }),
                             call),
                       new ClassDefinition(fooClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
@@ -167,6 +178,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                              new LhsExp(new VariableLhs(x)))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(false,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    fooMethod,
                                                                    new VarDec[0],
@@ -176,17 +188,17 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testReturnMethod() throws IOException {
-        // class Foo {
+        // class Foo<> {
         //   int x;
         //   init(int x) {
         //     this.x = x;
         //   }
-        //   int foo() {
+        //   <> int foo() {
         //     return this.x;
         //   }
         // }
-        // Foo f = new Print(1);
-        // int v = f.foo();
+        // Foo<> f = new Print<>(1);
+        // int v = f.foo<>();
         // print(v);
 
         final ClassName fooClass = new ClassName("Foo");
@@ -198,6 +210,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                   v),
                                                        new LhsExp(new VariableLhs(f)),
                                                        fooMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(fooClass);
 
@@ -205,15 +218,17 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         lhs.setLhsClass(fooClass);
         
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(fooClass),
+                      stmts(new NewStmt(new VarDec(new ClassType(fooClass, new Type[0]),
                                                    f),
                                         fooClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(1)
                                         }),
                             call,
                             new PrintStmt(new LhsExp(new VariableLhs(v)))),
                       new ClassDefinition(fooClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
@@ -225,6 +240,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                              new LhsExp(new VariableLhs(x)))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(false,
+                                                                   new TypeVariable[0],
                                                                    new IntType(),
                                                                    fooMethod,
                                                                    new VarDec[0],
@@ -234,20 +250,20 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testSuperGetFirst() throws IOException {
-        // class Base {
+        // class Base<> {
         //   int x;
         //   init(int x) {
         //     this.x = x;
         //   }
         // }
-        // class Sub extends Base {
+        // class Sub<> extends Base<> {
         //   int y;
         //   init(int x, int y) {
         //     super(x);
         //     this.y = y;
         //   }
         // }
-        // Sub s = new Sub(1, 2);
+        // Sub<> s = new Sub<>(1, 2);
         // print(s.x);
 
         final ClassName baseClass = new ClassName("Base");
@@ -263,15 +279,17 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         accessSX.setLhsClass(subClass);
 
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(subClass),
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass, new Type[0]),
                                                    s),
                                         subClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(1),
                                             new IntExp(2)
                                         }),
                             new PrintStmt(new LhsExp(accessSX))),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
@@ -283,7 +301,8 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                              new LhsExp(new VariableLhs(x)))),
                                           new MethodDefinition[0]),
                       new ClassDefinition(subClass,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), y)
                                           },
@@ -301,20 +320,20 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testSuperGetSecond() throws IOException {
-        // class Base {
+        // class Base<> {
         //   int x;
         //   init(int x) {
         //     this.x = x;
         //   }
         // }
-        // class Sub extends Base {
+        // class Sub<> extends Base<> {
         //   int y;
         //   init(int x, int y) {
         //     super(x);
         //     this.y = y;
         //   }
         // }
-        // Sub s = new Sub(1, 2);
+        // Sub<> s = new Sub<>(1, 2);
         // print(s.y);
 
         final ClassName baseClass = new ClassName("Base");
@@ -330,15 +349,17 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         accessSY.setLhsClass(subClass);
 
         assertResultC(2,
-                      stmts(new NewStmt(new VarDec(new ClassType(subClass),
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass, new Type[0]),
                                                    s),
                                         subClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(1),
                                             new IntExp(2)
                                         }),
                             new PrintStmt(new LhsExp(accessSY))),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
@@ -350,7 +371,8 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                              new LhsExp(new VariableLhs(x)))),
                                           new MethodDefinition[0]),
                       new ClassDefinition(subClass,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), y)
                                           },
@@ -368,14 +390,14 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testSingleVirtualNoInheritance() throws IOException {
-        // class Base {
+        // class Base<> {
         //   init() {}
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(1);
         //   }
         // }
-        // Base b = new Base();
-        // void v = b.doPrint();
+        // Base<> b = new Base<>();
+        // void v = b.doPrint<>();
 
         final ClassName baseClass = new ClassName("Base");
         final MethodName doPrintMethod = new MethodName("doPrint");
@@ -385,20 +407,24 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
                                                        new LhsExp(new VariableLhs(b)),
                                                        doPrintMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(baseClass);
 
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass, new Type[0]), b),
                                         baseClass,
+                                        new Type[0],
                                         new Exp[0]),
                             call),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
@@ -408,17 +434,17 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testSingleVirtualNoInheritanceInstanceVariable() throws IOException {
-        // class Base {
+        // class Base<> {
         //   int x;
         //   init(int x) {
         //     this.x = x;
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(this.x);
         //   }
         // }
-        // Base b = new Base(1);
-        // void v = b.doPrint();
+        // Base<> b = new Base<>(1);
+        // void v = b.doPrint<>();
 
         final ClassName baseClass = new ClassName("Base");
         final MethodName doPrintMethod = new MethodName("doPrint");
@@ -431,17 +457,20 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
                                                        new LhsExp(new VariableLhs(b)),
                                                        doPrintMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(baseClass);
 
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass, new Type[0]), b),
                                         baseClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(1)
                                         }),
                             call),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
@@ -452,6 +481,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                               new AssignStmt(accessX, new LhsExp(new VariableLhs(x)))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
@@ -461,24 +491,24 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testSingleVirtualWithInheritanceUsesBase() throws IOException {
-        // class Base {
+        // class Base<> {
         //   init() {}
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(1);
         //   }
         // }
-        // class Sub extends Base {
+        // class Sub<> extends Base<> {
         //   int x;
         //   init(int x) {
         //     super();
         //     this.x = x;
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(this.x);
         //   }
         // }
-        // Base b = new Base();
-        // void v = b.doPrint();
+        // Base<> b = new Base<>();
+        // void v = b.doPrint<>();
 
         final ClassName baseClass = new ClassName("Base");
         final ClassName subClass = new ClassName("Sub");
@@ -492,27 +522,32 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
                                                        new LhsExp(new VariableLhs(b)),
                                                        doPrintMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(baseClass);
 
         assertResultC(1,
-                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass, new Type[0]), b),
                                         baseClass,
+                                        new Type[0],
                                         new Exp[0]),
                             call),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(1)))
                                           }),
                       new ClassDefinition(subClass,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
                                           },
@@ -523,6 +558,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                     new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
@@ -532,24 +568,24 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testSingleVirtualWithInheritanceUsesSub() throws IOException {
-        // class Base {
+        // class Base<> {
         //   init() {}
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(1);
         //   }
         // }
-        // class Sub extends Base {
+        // class Sub<> extends Base<> {
         //   int x;
         //   init(int x) {
         //     super();
         //     this.x = x;
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(this.x);
         //   }
         // }
-        // Base b = new Sub(2);
-        // void v = b.doPrint();
+        // Base<> b = new Sub<>(2);
+        // void v = b.doPrint<>();
 
         final ClassName baseClass = new ClassName("Base");
         final ClassName subClass = new ClassName("Sub");
@@ -563,29 +599,34 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
                                                        new LhsExp(new VariableLhs(b)),
                                                        doPrintMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(baseClass);
 
         assertResultC(2,
-                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass, new Type[0]), b),
                                         subClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(2)
                                         }),
                             call),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(1)))
                                           }),
                       new ClassDefinition(subClass,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
                                           },
@@ -596,6 +637,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                     new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
@@ -605,27 +647,27 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testHasInheritedMethod() throws IOException {
-        // class Base {
+        // class Base<> {
         //   init() {}
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(1);
         //   }
-        //   virtual void doOtherPrint() {
+        //   <> virtual void doOtherPrint() {
         //     print(3);
         //   }
         // }
-        // class Sub extends Base {
+        // class Sub<> extends Base<> {
         //   int x;
         //   init(int x) {
         //     super();
         //     this.x = x;
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(this.x);
         //   }
         // }
-        // Base b = new Sub(2);
-        // void v = b.doOtherPrint();
+        // Base<> b = new Sub<>(2);
+        // void v = b.doOtherPrint<>();
 
         final ClassName baseClass = new ClassName("Base");
         final ClassName subClass = new ClassName("Sub");
@@ -640,34 +682,40 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new VoidType(), v),
                                                        new LhsExp(new VariableLhs(b)),
                                                        doOtherPrintMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(baseClass);
 
         assertResultC(3,
-                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), b),
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass, new Type[0]), b),
                                         subClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(2)
                                         }),
                             call),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(1))),
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doOtherPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(3)))
                                           }),
                       new ClassDefinition(subClass,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
                                           },
@@ -678,6 +726,7 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                     new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
@@ -687,30 +736,30 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testCanAddVirtualInSubclass() throws IOException {
-        // class Base {
+        // class Base<> {
         //   init() {}
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(1);
         //   }
-        //   virtual void doOtherPrint() {
+        //   <> virtual void doOtherPrint() {
         //     print(3);
         //   }
         // }
-        // class Sub extends Base {
+        // class Sub<> extends Base<> {
         //   int x;
         //   init(int x) {
         //     super();
         //     this.x = x;
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(this.x);
         //   }
-        //   virtual int getX() {
+        //   <> virtual int getX() {
         //     return this.x;
         //   }
         // }
-        // Sub s = new Sub(2);
-        // int v = s.getX();
+        // Sub<> s = new Sub<>(2);
+        // int v = s.getX<>();
         // print(v);
 
         final ClassName baseClass = new ClassName("Base");
@@ -727,35 +776,41 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new IntType(), v),
                                                        new LhsExp(new VariableLhs(s)),
                                                        getXMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(subClass);
 
         assertResultC(2,
-                      stmts(new NewStmt(new VarDec(new ClassType(subClass), s),
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass, new Type[0]), s),
                                         subClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(2)
                                         }),
                             call,
                             new PrintStmt(new LhsExp(new VariableLhs(v)))),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(1))),
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doOtherPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(3)))
                                           }),
                       new ClassDefinition(subClass,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
                                           },
@@ -766,11 +821,13 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                     new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new LhsExp(accessX))),
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new IntType(),
                                                                    getXMethod,
                                                                    new VarDec[0],
@@ -780,30 +837,30 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testCanAddNonVirtualInSubclass() throws IOException {
-        // class Base {
+        // class Base<> {
         //   init() {}
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(1);
         //   }
-        //   virtual void doOtherPrint() {
+        //   <> virtual void doOtherPrint() {
         //     print(3);
         //   }
         // }
-        // class Sub extends Base {
+        // class Sub<> extends Base<> {
         //   int x;
         //   init(int x) {
         //     super();
         //     this.x = x;
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(this.x);
         //   }
-        //   int getX() {
+        //   <> int getX() {
         //     return this.x;
         //   }
         // }
-        // Sub s = new Sub(2);
-        // int v = s.getX();
+        // Sub<> s = new Sub<>(2);
+        // int v = s.getX<>();
         // print(v);
 
         final ClassName baseClass = new ClassName("Base");
@@ -820,35 +877,41 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new IntType(), v),
                                                        new LhsExp(new VariableLhs(s)),
                                                        getXMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(subClass);
 
         assertResultC(2,
-                      stmts(new NewStmt(new VarDec(new ClassType(subClass), s),
+                      stmts(new NewStmt(new VarDec(new ClassType(subClass, new Type[0]), s),
                                         subClass,
+                                        new Type[0],
                                         new Exp[] {
                                             new IntExp(2)
                                         }),
                             call,
                             new PrintStmt(new LhsExp(new VariableLhs(v)))),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(1))),
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doOtherPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(3)))
                                           }),
                       new ClassDefinition(subClass,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
                                           },
@@ -859,11 +922,13 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                     new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new LhsExp(accessX))),
                                               new MethodDefinition(false,
+                                                                   new TypeVariable[0],
                                                                    new IntType(),
                                                                    getXMethod,
                                                                    new VarDec[0],
@@ -873,38 +938,38 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
 
     @Test
     public void testCanInheritFromBaseMultipleTimes() throws IOException {
-        // class Base {
+        // class Base<> {
         //   init() {}
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(1);
         //   }
-        //   virtual void doOtherPrint() {
+        //   <> virtual void doOtherPrint() {
         //     print(3);
         //   }
         // }
-        // class Sub1 extends Base {
+        // class Sub1<> extends Base<> {
         //   int x;
         //   init(int x) {
         //     super();
         //     this.x = x;
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(this.x);
         //   }
-        //   int getX() {
+        //   <> int getX() {
         //     return this.x;
         //   }
         // }
-        // class Sub2 extends Base {
+        // class Sub2<> extends Base<> {
         //   init() {
         //     super();
         //   }
-        //   virtual void doPrint() {
+        //   <> virtual void doPrint() {
         //     print(4);
         //   }
         // }
-        // Base b = new Sub2();
-        // void v = b.doPrint();
+        // Base<> b = new Sub2<>();
+        // void v = b.doPrint<>();
 
         final ClassName baseClass = new ClassName("Base");
         final ClassName sub1Class = new ClassName("Sub1");
@@ -921,32 +986,38 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
         final MethodCallStmt call = new MethodCallStmt(new VarDec(new IntType(), v),
                                                        new LhsExp(new VariableLhs(s)),
                                                        doPrintMethod,
+                                                       new Type[0],
                                                        new Exp[0]);
         call.setOnClass(baseClass);
 
         assertResultC(4,
-                      stmts(new NewStmt(new VarDec(new ClassType(baseClass), s),
+                      stmts(new NewStmt(new VarDec(new ClassType(baseClass, new Type[0]), s),
                                         sub2Class,
+                                        new Type[0],
                                         new Exp[0]),
                             call),
                       new ClassDefinition(baseClass,
+                                          new TypeVariable[0],
                                           null,
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new EmptyStmt()),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(1))),
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doOtherPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(3)))
                                           }),
                       new ClassDefinition(sub1Class,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[] {
                                               new VarDec(new IntType(), x)
                                           },
@@ -957,22 +1028,26 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                     new AssignStmt(accessX, new LhsExp(new VariableLhs(x))))),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],
                                                                    new PrintStmt(new LhsExp(accessX))),
                                               new MethodDefinition(false,
+                                                                   new TypeVariable[0],
                                                                    new IntType(),
                                                                    getXMethod,
                                                                    new VarDec[0],
                                                                    new ReturnStmt(new LhsExp(accessX)))
                                           }),
                       new ClassDefinition(sub2Class,
-                                          baseClass,
+                                          new TypeVariable[0],
+                                          new Extends(baseClass, new Type[0]),
                                           new VarDec[0],
                                           new Constructor(new VarDec[0], new SuperStmt(new Exp[0])),
                                           new MethodDefinition[] {
                                               new MethodDefinition(true,
+                                                                   new TypeVariable[0],
                                                                    new VoidType(),
                                                                    doPrintMethod,
                                                                    new VarDec[0],

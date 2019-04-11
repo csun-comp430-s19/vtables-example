@@ -9,20 +9,21 @@ import org.junit.Test;
 public class TypecheckerExpTest {
     // ---BEGIN CONSTANTS---
     //
-    // class Empty {
+    // class Empty<> {
     //   init() {}
     // }
     public static final ClassName EMPTY_CLASS_NAME =
         new ClassName("Empty");
     public static final ClassDefinition EMPTY_CLASS =
         new ClassDefinition(EMPTY_CLASS_NAME,
+                            new TypeVariable[0],
                             null,
                             new VarDec[0],
                             new Constructor(new VarDec[0],
                                             new EmptyStmt()),
                             new MethodDefinition[0]);
 
-    // class Field {
+    // class Field<> {
     //   int x;
     //   init() {}
     // }
@@ -30,6 +31,7 @@ public class TypecheckerExpTest {
         new ClassName("Field");
     public static final ClassDefinition FIELD_CLASS =
         new ClassDefinition(FIELD_CLASS_NAME,
+                            new TypeVariable[0],
                             null,
                             new VarDec[] {
                                 new VarDec(new IntType(), new Variable("x"))
@@ -71,9 +73,11 @@ public class TypecheckerExpTest {
     }
 
     public static TypeEnvironment initialEnv(final VarDec[] params,
-                                             final ClassName onClass) {
+                                             final ClassType thisType) {
         try {
-            return TypeEnvironment.initialEnv(params, onClass);
+            return TypeEnvironment.initialEnv(new TypeVariable[0],
+                                              params,
+                                              thisType);
         } catch (final TypeErrorException e) {
             fail("Malformed type environment");
             return null;
@@ -93,16 +97,16 @@ public class TypecheckerExpTest {
     public void testThisExp() {
         assertExpType(mkChecker(new ClassDefinition[] { EMPTY_CLASS }),
                       initialEnv(new VarDec[0],
-                                 EMPTY_CLASS_NAME),
+                                 new ClassType(EMPTY_CLASS_NAME, new Type[0])),
                       new LhsExp(new ThisLhs()),
-                      new ClassType(EMPTY_CLASS_NAME));
+                      new ClassType(EMPTY_CLASS_NAME, new Type[0]));
     }
 
     @Test
     public void testFieldAccess() {
         assertExpType(mkChecker(new ClassDefinition[] { FIELD_CLASS }),
                       initialEnv(new VarDec[0],
-                                 FIELD_CLASS_NAME),
+                                 new ClassType(FIELD_CLASS_NAME, new Type[0])),
                       new LhsExp(new FieldAccessLhs(new ThisLhs(),
                                                     new Variable("x"))),
                       new IntType());
@@ -143,7 +147,7 @@ public class TypecheckerExpTest {
     public void testFieldAccessNoSuchField() {
         assertExpType(mkChecker(new ClassDefinition[] { FIELD_CLASS }),
                       initialEnv(new VarDec[0],
-                                 FIELD_CLASS_NAME),
+                                 new ClassType(FIELD_CLASS_NAME, new Type[0])),
                       new LhsExp(new FieldAccessLhs(new ThisLhs(),
                                                     new Variable("y"))),
                       null);

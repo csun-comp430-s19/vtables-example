@@ -15,14 +15,12 @@ public class VariableTable {
     }
 
     public void pushVariable(final Variable variable,
-                             final Type type,
                              final int size) {
-        variables.push(new VariableEntry(variable, type, size));
+        variables.push(new VariableEntry(variable, size));
     }
 
     public void pushDummy(final int size) {
         pushVariable(new Variable("DUMMY"),
-                     new VoidType(),
                      size);
     }
     
