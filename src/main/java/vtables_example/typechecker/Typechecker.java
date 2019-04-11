@@ -133,6 +133,7 @@ public class Typechecker {
                                          actualParams.length);
         } else {
             for (int index = 0; index < formalParams.length; index++) {
+                env.typeInScope(formalParams[index].type);
                 final Type expected = formalParams[index].type;
                 final Type actual = typeofExp(env, actualParams[index]);
                 typesOk(expected, actual);
@@ -191,11 +192,14 @@ public class Typechecker {
             env.typesInScope(stmt.types);
             stmt.setOnClass(onClass);
             final MethodDefinition calling = findMethod(onClass, stmt.name);
+            // TODO: parameter types also need to be specialized.  It makes sense
+            // to do this in paramTypesOk; this needs to be done on every call
+            // to paramTypesOk
             paramTypesOk(env, calling.params, stmt.params);
-            final Type specialized = typeReplace(calling.returnType,
-                                                 calling.typeVariables,
-                                                 stmt.types);
-            typesOk(stmt.vardec.type, specialized);
+            final Type specializedReturn = typeReplace(calling.returnType,
+                                                       calling.typeVariables,
+                                                       stmt.types);
+            typesOk(stmt.vardec.type, specializedReturn);
             return env.addVariable(stmt.vardec);
         } else {
             throw new TypeErrorException("Expected class type; received; " + expType);

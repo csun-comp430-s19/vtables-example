@@ -17,6 +17,7 @@ public class TypecheckerClassTest {
     public static final ClassName BASE_CLASS_NAME = new ClassName("Base");
     public static final ClassName SUB_CLASS_NAME = new ClassName("Sub");
     public static final ClassName WITH_METHOD_CLASS_NAME = new ClassName("WithMethod");
+    public static final ClassName GENERIC_METHOD_CLASS_NAME = new ClassName("GenericMethod");
     // ---END CONSTANTS---
 
     // Cannot be constants, as the typechecker will fill in types for certain parts.
@@ -73,6 +74,7 @@ public class TypecheckerClassTest {
         try {
             Typechecker.typecheckProgram(program);
         } catch (final TypeErrorException e) {
+            e.printStackTrace();
             fail("expected well-typed; " + e.getMessage());
         }
     }
@@ -246,5 +248,43 @@ public class TypecheckerClassTest {
                                  withMethod()));
     }
 
+    // class GenericMethod {
+    //   init() {}
+    //   <A> A id(A a) {
+    //     return a;
+    //   }
+    // }
+    public static ClassDefinition genericMethod() {
+        return new ClassDefinition(GENERIC_METHOD_CLASS_NAME,
+                                   new TypeVariable[0],
+                                   null,
+                                   new VarDec[0],
+                                   new Constructor(new VarDec[0], new EmptyStmt()),
+                                   new MethodDefinition[] {
+                                       new MethodDefinition(false,
+                                                            new TypeVariable[] { new TypeVariable("A") },
+                                                            new TypeVariable("A"),
+                                                            new MethodName("id"),
+                                                            new VarDec[] {
+                                                                new VarDec(new TypeVariable("A"), new Variable("a"))
+                                                            },
+                                                            new ReturnStmt(new LhsExp(new VariableLhs(new Variable("a")))))
+                                   });
+    } // genericMethod
+
+    @Test
+    public void testGenericMethod() {
+        assertWellTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(GENERIC_METHOD_CLASS_NAME, new Type[0]),
+                                                               new Variable("x")),
+                                                    GENERIC_METHOD_CLASS_NAME,
+                                                    new Type[0],
+                                                    new Exp[0]),
+                                        new MethodCallStmt(new VarDec(new IntType(), new Variable("y")),
+                                                           new LhsExp(new VariableLhs(new Variable("x"))),
+                                                           new MethodName("id"),
+                                                           new Type[] { new IntType() },
+                                                           new Exp[] { new IntExp(0) })),
+                                  genericMethod()));
+    }
     // TODO: most tests are missing, particularly those dealing with ill-typed programs
 } // TypecheckerClassTest
