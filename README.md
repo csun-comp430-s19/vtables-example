@@ -10,7 +10,7 @@ cname is a class name
 mname is a method name
 
 exp ::= i | lhs
-lhs ::= x | lhs.x | `this`
+lhs ::= x | lhs.x | this
 type ::= int | cname
 vdec ::= type x
 stmt ::= vdec = new cname(exp*) |
@@ -37,5 +37,6 @@ program ::= cdef* stmt
 - Most expressions do not nest (e.g., `new` and method calls are statements, not expressions).
   This is to simplify codegen so that every expression can be compiled with a single register, without needing the stack.
 - Overriding methods must be marked `virtual`, unlike C++
-- There is no parser or typechecker.
-  The only new feature with typechecking is subtyping.
+- There is no lexer or parser.
+- The typechecker is not well-tested.
+
