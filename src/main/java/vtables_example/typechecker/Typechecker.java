@@ -92,31 +92,22 @@ public class Typechecker {
         }
     } // typeofExp
 
-    // Foo<int>
-    // class Foo<A> extends Bar<Baz<A>>
-    private static ClassType asSupertype(final ClassType type,
-                                         final ClassDefinition myDef) throws TypeErrorException {
-        assert(myDef.doesExtend != null);
-        assert(type.types.length == myDef.typeVariables.length);
-        final Type[] newTypes = typeReplaceAll(myDef.doesExtend.types,
-                                               myDef.typeVariables,
-                                               type.types);
-        return new ClassType(myDef.doesExtend.extendsName, newTypes);
+    private ClassType asSupertype(final ClassType type) throws TypeErrorException {
+        final ClassDefinition abstracted = getClass(type.name);
+        if (abstracted.doesExtend == null) {
+            throw new TypeErrorException("Has no supertype: " + type);
+        }
+        final ClassDefinition specialized = TypeRewriter.rewriteClassDefinition(abstracted,
+                                                                                type.types);
+        return new ClassType(specialized.doesExtend.extendsName,
+                             specialized.doesExtend.types);
     } // asSupertype
     
     public void typesOk(final Type baseType, final Type subType) throws TypeErrorException {
         if (!baseType.equals(subType)) {
-            // see if subType is a subtype of base type
+            // see if subtyping is involved
             if (baseType instanceof ClassType && subType instanceof ClassType) {
-                final ClassType subTypeAsClass = (ClassType)subType;
-                final ClassDefinition subClassDef = getClass(subTypeAsClass.name);
-                if (subClassDef.doesExtend != null) {
-                    // The subtype has a supertype.
-                    // Treat it as the supertype.
-                    typesOk(baseType, asSupertype(subTypeAsClass, subClassDef));
-                } else {
-                    throw new TypeErrorException(subType.toString() + " is not a subtype of " + baseType.toString());
-                }
+                typesOk(baseType, asSupertype((ClassType)subType));
             } else {
                 throw new TypeErrorException("Base type " + baseType + " is not comparable to " + subType);
             }
@@ -142,44 +133,40 @@ public class Typechecker {
     } // paramTypesOk
 
     // returns null if it couldn't find it
-    public MethodDefinition findMethodDirect(final ClassName onClass,
-                                             final MethodName methodName) throws TypeErrorException {
-        final ClassDefinition classDef = getClass(onClass);
-        for (final MethodDefinition methodDef : classDef.methods) {
+    public MethodDefinition findMethodDirect(final ClassDefinition onClass,
+                                             final MethodName methodName) {
+        for (final MethodDefinition methodDef : onClass.methods) {
             if (methodDef.name.equals(methodName)) {
                 return methodDef;
             }
         }
         return null;
     } // findMethodDirect
-    
-    public MethodDefinition findMethod(final ClassName onClass,
+
+    // returns a specialized MethodDefinition
+    public MethodDefinition findMethod(final ClassType onClass,
                                        final MethodName methodName) throws TypeErrorException {
-        final MethodDefinition result = findMethodDirect(onClass, methodName);
+        final ClassDefinition abstractedClass = getClass(onClass.name);
+        final ClassDefinition specializedClass = TypeRewriter.rewriteClassDefinition(abstractedClass,
+                                                                                     onClass.types);
+        final MethodDefinition result = findMethodDirect(specializedClass, methodName);
         if (result == null) {
             // Not on me; see if it's on my parent
-            final ClassDefinition classDef = getClass(onClass);
-            if (classDef.doesExtend == null) {
-                throw new TypeErrorException("No such method: " + methodName);
-            } else {
-                return findMethod(classDef.doesExtend.extendsName, methodName);
-            }
+            return findMethod(asSupertype(onClass), methodName);
         } else {
             return result;
         }
-    } // findMethod
-    
+    } // findMethod        
+        
     public TypeEnvironment typecheckNewStmt(final TypeEnvironment env,
                                             final NewStmt stmt) throws TypeErrorException {
-        final ClassDefinition classDef = getClass(stmt.name);
+        final ClassDefinition abstractedClassDef = getClass(stmt.name);
         env.typeInScope(stmt.vardec.type);
         env.typesInScope(stmt.types);
-        paramTypesOk(env, classDef.constructor.params, stmt.params);
-        final ClassType abstractedType = new ClassType(classDef.myName, classDef.typeVariables);
-        final ClassType specializedType = (ClassType)typeReplace(abstractedType,
-                                                                 classDef.typeVariables,
-                                                                 stmt.types);
-        typesOk(stmt.vardec.type, specializedType);
+        final ClassDefinition specializedClassDef = TypeRewriter.rewriteClassDefinition(abstractedClassDef,
+                                                                                        stmt.types);
+        paramTypesOk(env, specializedClassDef.constructor.params, stmt.params);
+        typesOk(stmt.vardec.type, new ClassType(specializedClassDef.myName, stmt.types));
         return env.addVariable(stmt.vardec);
     } // typecheckNewStmt
 
@@ -187,19 +174,15 @@ public class Typechecker {
                                                    final MethodCallStmt stmt) throws TypeErrorException {
         final Type expType = typeofExp(env, stmt.exp);
         if (expType instanceof ClassType) {
-            final ClassName onClass = ((ClassType)expType).name;
+            final ClassType onClass = (ClassType)expType;
             env.typeInScope(stmt.vardec.type);
             env.typesInScope(stmt.types);
-            stmt.setOnClass(onClass);
-            final MethodDefinition calling = findMethod(onClass, stmt.name);
-            // TODO: parameter types also need to be specialized.  It makes sense
-            // to do this in paramTypesOk; this needs to be done on every call
-            // to paramTypesOk
-            paramTypesOk(env, calling.params, stmt.params);
-            final Type specializedReturn = typeReplace(calling.returnType,
-                                                       calling.typeVariables,
-                                                       stmt.types);
-            typesOk(stmt.vardec.type, specializedReturn);
+            stmt.setOnClass(onClass.name);
+            final MethodDefinition abstractedCalling = findMethod(onClass, stmt.name);
+            final MethodDefinition specializedCalling = TypeRewriter.rewriteMethodDefinitionToplevel(abstractedCalling,
+                                                                                                     stmt.types);
+            paramTypesOk(env, specializedCalling.params, stmt.params);
+            typesOk(stmt.vardec.type, specializedCalling.returnType);
             return env.addVariable(stmt.vardec);
         } else {
             throw new TypeErrorException("Expected class type; received; " + expType);
@@ -373,40 +356,28 @@ public class Typechecker {
     public void virtualOk(final ClassName onClass,
                           final boolean isVirtual,
                           final MethodName methodName) throws TypeErrorException {
-        final MethodDefinition current = findMethodDirect(onClass, methodName);
+        final ClassDefinition classDef = getClass(onClass);
+        final MethodDefinition current = findMethodDirect(classDef, methodName);
         if (current != null && current.isVirtual != isVirtual) {
             throw new TypeErrorException("virtual disagreement on " + methodName);
         } else {
             // Either I don't have the method, or virtual agreed.  Make sure
             // the parent agrees.
-            final ClassDefinition classDef = getClass(onClass);
             if (classDef.doesExtend != null) {
                 virtualOk(classDef.doesExtend.extendsName, isVirtual, methodName);
             }
         }
     } // virtualOk
 
-    public VarDec[] getSuperParams(final ClassName forClass,
-                                   final Type[] specializations) throws TypeErrorException {
-        final ClassDefinition classDef = getClass(forClass);
-        if (classDef.doesExtend != null) {
-            final ClassDefinition superClassDef = getClass(classDef.doesExtend.extendsName);
-            // first, specialize the types we pass to the superclass
-            final Type[] specializedSelf = typeReplaceAll(classDef.doesExtend.types,
-                                                          classDef.typeVariables,
-                                                          specializations);
-
-            // now specialize the parameters of the superclass with those types
-            final VarDec[] originalParams = superClassDef.constructor.params;
-            final Type[] paramTypes = typeReplaceAll(VarDec.types(originalParams),
-                                                     superClassDef.typeVariables,
-                                                     specializedSelf);
-            assert(originalParams.length == paramTypes.length);
-            final VarDec[] result = new VarDec[originalParams.length];
-            for (int index = 0; index < result.length; index++) {
-                result[index] = new VarDec(paramTypes[index], originalParams[index].variable);
-            }
-            return result;
+    public VarDec[] getSuperParams(final ClassType thisClass) throws TypeErrorException {
+        final ClassDefinition selfAbstracted = getClass(thisClass.name);
+        if (selfAbstracted.doesExtend != null) {
+            final ClassDefinition selfSpecialized = TypeRewriter.rewriteClassDefinition(selfAbstracted,
+                                                                                        thisClass.types);
+            final ClassDefinition superAbstracted = getClass(selfAbstracted.doesExtend.extendsName);
+            final ClassDefinition superSpecialized = TypeRewriter.rewriteClassDefinition(superAbstracted,
+                                                                                         selfSpecialized.doesExtend.types);
+            return superSpecialized.constructor.params;
         } else {
             return null;
         }
@@ -467,7 +438,7 @@ public class Typechecker {
         superReturnOkInConstructor(classDef.doesExtend == null, constructor.body);
         typecheckStmt(TypeEnvironment.initialEnv(inScopeFromClass, constructor.params, thisType),
                       null,
-                      getSuperParams(thisType.name, thisType.types),
+                      getSuperParams(thisType),
                       constructor.body);
     } // typecheckConstructor
     
@@ -532,53 +503,6 @@ public class Typechecker {
             typecheckMethod(thisType, typeVariablesInScope, methodDef);
         }
     } // typecheckClass
-
-    public static Type typeReplace(final Type originalType,
-                                   final Map<TypeVariable, Type> replacements) throws TypeErrorException {
-        if (originalType instanceof IntType) {
-            return originalType;
-        } else if (originalType instanceof ClassType) {
-            final ClassType asClass = (ClassType)originalType;
-            final Type[] newTypes = new Type[asClass.types.length];
-            for (int index = 0; index < newTypes.length; index++) {
-                newTypes[index] = typeReplace(asClass.types[index], replacements);
-            }
-            return new ClassType(asClass.name, newTypes);
-        } else if (originalType instanceof TypeVariable) {
-            final TypeVariable asVariable = (TypeVariable)originalType;
-            assert(replacements.containsKey(asVariable));
-            return replacements.get(asVariable);
-        } else {
-            return deadCode();
-        }
-    } // typeReplace
-
-    public static Type[] typeReplaceAll(final Type[] originalTypes,
-                                        final TypeVariable[] typeVariables,
-                                        final Type[] replacements) throws TypeErrorException {
-        final Type[] result = new Type[originalTypes.length];
-        for (int index = 0; index < result.length; index++) {
-            result[index] = typeReplace(originalTypes[index], typeVariables, replacements);
-        }
-        return result;
-    } // typeReplaceAll
-    
-    public static Type typeReplace(final Type originalType,
-                                   final TypeVariable[] typeVariables,
-                                   final Type[] replacements) throws TypeErrorException {
-        if (typeVariables.length != replacements.length) {
-            throw new TypeErrorException("Arity mismatch with type variables; got: " +
-                                         replacements.length +
-                                         "; expected: " +
-                                         typeVariables.length);
-        } else {
-            final Map<TypeVariable, Type> mapping = new HashMap<TypeVariable, Type>();
-            for (int index = 0; index < typeVariables.length; index++) {
-                mapping.put(typeVariables[index], replacements[index]);
-            }
-            return typeReplace(originalType, mapping);
-        }
-    } // typeReplace
 
     public void typecheckAllClasses() throws TypeErrorException {
         // cyclic checks go first, as all downstream code assumes acyclic
