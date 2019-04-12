@@ -18,6 +18,9 @@ public class TypecheckerClassTest {
     public static final ClassName SUB_CLASS_NAME = new ClassName("Sub");
     public static final ClassName WITH_METHOD_CLASS_NAME = new ClassName("WithMethod");
     public static final ClassName GENERIC_METHOD_CLASS_NAME = new ClassName("GenericMethod");
+    public static final ClassName GENERIC_CLASS_CLASS_NAME = new ClassName("GenericClass");
+    public static final ClassName PAIR_CLASS_NAME = new ClassName("Pair");
+    public static final ClassName WITH_FIRST_CLASS_NAME = new ClassName("WithFirst");
     // ---END CONSTANTS---
 
     // Cannot be constants, as the typechecker will fill in types for certain parts.
@@ -248,7 +251,7 @@ public class TypecheckerClassTest {
                                  withMethod()));
     }
 
-    // class GenericMethod {
+    // class GenericMethod<> {
     //   init() {}
     //   <A> A id(A a) {
     //     return a;
@@ -286,5 +289,208 @@ public class TypecheckerClassTest {
                                                            new Exp[] { new IntExp(0) })),
                                   genericMethod()));
     }
-    // TODO: most tests are missing, particularly those dealing with ill-typed programs
+
+    @Test
+    public void testGenericMethodWrongReturnType() {
+        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(GENERIC_METHOD_CLASS_NAME, new Type[0]),
+                                                              new Variable("x")),
+                                                   GENERIC_METHOD_CLASS_NAME,
+                                                   new Type[0],
+                                                   new Exp[0]),
+                                       new MethodCallStmt(new VarDec(new ClassType(GENERIC_METHOD_CLASS_NAME, new Type[0]), new Variable("y")),
+                                                          new LhsExp(new VariableLhs(new Variable("x"))),
+                                                          new MethodName("id"),
+                                                          new Type[] { new IntType() },
+                                                          new Exp[] { new IntExp(0) })),
+                                 genericMethod()));
+    }
+
+    @Test
+    public void testGenericMethodWrongParameterType() {
+        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(GENERIC_METHOD_CLASS_NAME, new Type[0]),
+                                                              new Variable("x")),
+                                                   GENERIC_METHOD_CLASS_NAME,
+                                                   new Type[0],
+                                                   new Exp[0]),
+                                       new MethodCallStmt(new VarDec(new IntType(), new Variable("y")),
+                                                          new LhsExp(new VariableLhs(new Variable("x"))),
+                                                          new MethodName("id"),
+                                                          new Type[] { new ClassType(GENERIC_METHOD_CLASS_NAME, new Type[0]) },
+                                                          new Exp[] { new IntExp(0) })),
+                                 genericMethod()));
+    }
+
+    // class GenericClass<A> {
+    //   A a;
+    //   init(A a) {
+    //     this.a = a;
+    //   }
+    //   <> A getA() {
+    //     return this.a;
+    //   }
+    // }
+    public static ClassDefinition genericClass() {
+        return new ClassDefinition(GENERIC_CLASS_CLASS_NAME,
+                                   new TypeVariable[] { new TypeVariable("A") },
+                                   null,
+                                   new VarDec[] { new VarDec(new TypeVariable("A"), new Variable("a")) },
+                                   new Constructor(new VarDec[] { new VarDec(new TypeVariable("A"), new Variable("a")) },
+                                                   new AssignStmt(new FieldAccessLhs(new ThisLhs(),
+                                                                                     new Variable("a")),
+                                                                  new LhsExp(new VariableLhs(new Variable("a"))))),
+                                   new MethodDefinition[] {
+                                       new MethodDefinition(false,
+                                                            new TypeVariable[0],
+                                                            new TypeVariable("A"),
+                                                            new MethodName("getA"),
+                                                            new VarDec[0],
+                                                            new ReturnStmt(new LhsExp(new FieldAccessLhs(new ThisLhs(),
+                                                                                                         new Variable("a")))))
+                                   });
+    }
+
+    @Test
+    public void testGenericClass() {
+        // GenericClass<int> g = new GenericClass<int>(7);
+        // int i = g.getA<>();
+        assertWellTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(GENERIC_CLASS_CLASS_NAME,
+                                                                             new Type[]{ new IntType() }),
+                                                               new Variable("g")),
+                                                    GENERIC_CLASS_CLASS_NAME,
+                                                    new Type[]{ new IntType() },
+                                                    new Exp[] { new IntExp(7) }),
+                                        new MethodCallStmt(new VarDec(new IntType(), new Variable("i")),
+                                                           new LhsExp(new VariableLhs(new Variable("g"))),
+                                                           new MethodName("getA"),
+                                                           new Type[0],
+                                                           new Exp[0])),
+                                  genericClass()));
+    }
+
+    @Test
+    public void testGenericClassWrongParameter() {
+        // GenericClass<int> g = new GenericClass<GenericClass<int>>(7);
+        // int i = g.getA<>();
+        assertIllTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(GENERIC_CLASS_CLASS_NAME,
+                                                                            new Type[]{ new IntType() }),
+                                                              new Variable("g")),
+                                                   GENERIC_CLASS_CLASS_NAME,
+                                                   new Type[]{
+                                                       new ClassType(GENERIC_CLASS_CLASS_NAME,
+                                                                     new Type[]{ new IntType() })
+                                                   },
+                                                   new Exp[] { new IntExp(7) }),
+                                       new MethodCallStmt(new VarDec(new IntType(), new Variable("i")),
+                                                          new LhsExp(new VariableLhs(new Variable("g"))),
+                                                          new MethodName("getA"),
+                                                          new Type[0],
+                                                          new Exp[0])),
+                                 genericClass()));
+    }
+
+    // class Pair<A, B> {
+    //   A first;
+    //   B second;
+    //   init(A first, B second) {
+    //     this.first = first;
+    //     this.second = second;
+    //   }
+    // }
+    public static ClassDefinition pairClass() {
+        return new ClassDefinition(PAIR_CLASS_NAME,
+                                   new TypeVariable[] {
+                                       new TypeVariable("A"),
+                                       new TypeVariable("B")
+                                   },
+                                   null,
+                                   new VarDec[] {
+                                       new VarDec(new TypeVariable("A"), new Variable("first")),
+                                       new VarDec(new TypeVariable("B"), new Variable("second"))
+                                   },
+                                   new Constructor(new VarDec[] {
+                                           new VarDec(new TypeVariable("A"), new Variable("first")),
+                                           new VarDec(new TypeVariable("B"), new Variable("second"))
+                                       },
+                                       stmts(new AssignStmt(new FieldAccessLhs(new ThisLhs(),
+                                                                               new Variable("first")),
+                                                            new LhsExp(new VariableLhs(new Variable("first")))),
+                                             new AssignStmt(new FieldAccessLhs(new ThisLhs(),
+                                                                               new Variable("second")),
+                                                            new LhsExp(new VariableLhs(new Variable("second")))))),
+                                   new MethodDefinition[0]);
+    }
+
+    // class WithFirst<A> {
+    //   A first;
+    //   init(A first) {
+    //     this.first = first;
+    //   }
+    //   <B> Pair<A, B> withSecond(B second) {
+    //     Pair<A, B> result = new Pair<A, B>(this.first, second);
+    //     return result;
+    //   }
+    // }
+    public static ClassDefinition withFirstClass() {
+        return new ClassDefinition(WITH_FIRST_CLASS_NAME,
+                                   new TypeVariable[]{ new TypeVariable("A") },
+                                   null,
+                                   new VarDec[]{ new VarDec(new TypeVariable("A"), new Variable("first")) },
+                                   new Constructor(new VarDec[]{ new VarDec(new TypeVariable("A"), new Variable("first")) },
+                                                   new AssignStmt(new FieldAccessLhs(new ThisLhs(),
+                                                                                     new Variable("first")),
+                                                                  new LhsExp(new VariableLhs(new Variable("first"))))),
+                                   new MethodDefinition[] {
+                                       new MethodDefinition(false,
+                                                            new TypeVariable[]{ new TypeVariable("B") },
+                                                            new ClassType(PAIR_CLASS_NAME,
+                                                                          new Type[]{
+                                                                              new TypeVariable("A"),
+                                                                              new TypeVariable("B")
+                                                                          }),
+                                                            new MethodName("withSecond"),
+                                                            new VarDec[]{ new VarDec(new TypeVariable("B"), new Variable("second")) },
+                                                            stmts(new NewStmt(new VarDec(new ClassType(PAIR_CLASS_NAME,
+                                                                                                       new Type[]{
+                                                                                                           new TypeVariable("A"),
+                                                                                                           new TypeVariable("B")
+                                                                                                       }),
+                                                                                         new Variable("result")),
+                                                                              PAIR_CLASS_NAME,
+                                                                              new Type[]{
+                                                                                  new TypeVariable("A"),
+                                                                                  new TypeVariable("B")
+                                                                              },
+                                                                              new Exp[] {
+                                                                                  new LhsExp(new FieldAccessLhs(new ThisLhs(),
+                                                                                                                new Variable("first"))),
+                                                                                  new LhsExp(new VariableLhs(new Variable("second")))
+                                                                              }),
+                                                                  new ReturnStmt(new LhsExp(new VariableLhs(new Variable("result"))))))
+                                   });
+    }
+
+    @Test
+    public void testGenericClassAndMethod() {
+        // WithFirst<int> foo = new WithFirst<int>(7);
+        // Pair<int, int> bar = foo.withSecond<int>(8);
+        assertWellTyped(mkProgram(stmts(new NewStmt(new VarDec(new ClassType(WITH_FIRST_CLASS_NAME,
+                                                                             new Type[] { new IntType() }),
+                                                               new Variable("foo")),
+                                                    WITH_FIRST_CLASS_NAME,
+                                                    new Type[] { new IntType() },
+                                                    new Exp[] { new IntExp(7) }),
+                                        new MethodCallStmt(new VarDec(new ClassType(PAIR_CLASS_NAME,
+                                                                                    new Type[] {
+                                                                                        new IntType(),
+                                                                                        new IntType()
+                                                                                    }),
+                                                                      new Variable("bar")),
+                                                           new LhsExp(new VariableLhs(new Variable("foo"))),
+                                                           new MethodName("withSecond"),
+                                                           new Type[] { new IntType() },
+                                                           new Exp[] { new IntExp(8) })),
+                                  pairClass(),
+                                  withFirstClass()));
+    }
+// TODO: most tests are missing, particularly those dealing with ill-typed programs
 } // TypecheckerClassTest
