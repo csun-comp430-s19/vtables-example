@@ -1,6 +1,9 @@
 package vtables_example.codegen;
 
 import vtables_example.syntax.*;
+import vtables_example.typechecker.Typechecker;
+import vtables_example.typechecker.TypeErrorException;
+import vtables_example.typechecker.TypecheckerClassTest;
 import static vtables_example.typechecker.TypecheckerClassTest.stmts;
 
 import java.io.IOException;
@@ -32,6 +35,16 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                      makeMapping(classes));
     }
 
+    public void assertResultTyped(final int expected,
+                                  final Stmt entryPoint,
+                                  final ClassDefinition... classes) throws IOException, TypeErrorException {
+        final Program program = new Program(classes, entryPoint);
+        Typechecker.typecheckProgram(program);
+        assertResult(expected,
+                     program,
+                     makeMapping(classes));
+    }
+    
     @Test
     public void testPrintInMethodNoParams() throws IOException {
         // class Foo<> {
@@ -1053,5 +1066,77 @@ public class MIPSCodeGeneratorClassTest extends MIPSCodeGeneratorTestBase<Progra
                                                                    new VarDec[0],
                                                                    new PrintStmt(new IntExp(4)))
                                           }));
+    }
+
+    @Test
+    public void testGenericMethod() throws IOException, TypeErrorException {
+        // GenericMethod<> gm = new GenericMethod<>();
+        // int x = gm.id<int>(1);
+        // print(x);
+        assertResultTyped(1,
+                          stmts(new NewStmt(new VarDec(new ClassType(TypecheckerClassTest.GENERIC_METHOD_CLASS_NAME,
+                                                                     new Type[0]),
+                                                       new Variable("gm")),
+                                            TypecheckerClassTest.GENERIC_METHOD_CLASS_NAME,
+                                            new Type[0],
+                                            new Exp[0]),
+                                new MethodCallStmt(new VarDec(new IntType(), new Variable("x")),
+                                                   new LhsExp(new VariableLhs(new Variable("gm"))),
+                                                   new MethodName("id"),
+                                                   new Type[]{ new IntType() },
+                                                   new Exp[]{ new IntExp(1) }),
+                                new PrintStmt(new LhsExp(new VariableLhs(new Variable("x"))))),
+                          TypecheckerClassTest.genericMethod());
+    }
+
+    @Test
+    public void testGenericClass() throws IOException, TypeErrorException {
+        // GenericClass<int> g = new GenericClass<int>(1);
+        // int x = g.getA<>();
+        // print(x);
+        assertResultTyped(1,
+                          stmts(new NewStmt(new VarDec(new ClassType(TypecheckerClassTest.GENERIC_CLASS_CLASS_NAME,
+                                                                     new Type[]{ new IntType() }),
+                                                       new Variable("g")),
+                                            TypecheckerClassTest.GENERIC_CLASS_CLASS_NAME,
+                                            new Type[]{ new IntType() },
+                                            new Exp[]{ new IntExp(1) }),
+                                new MethodCallStmt(new VarDec(new IntType(),
+                                                              new Variable("x")),
+                                                   new LhsExp(new VariableLhs(new Variable("g"))),
+                                                   new MethodName("getA"),
+                                                   new Type[0],
+                                                   new Exp[0]),
+                                new PrintStmt(new LhsExp(new VariableLhs(new Variable("x"))))),
+                          TypecheckerClassTest.genericClass());
+    }
+
+    @Test
+    public void testGenericClassAndMethodGetFirst() throws IOException, TypeErrorException {
+        // WithFirst<int> foo = new WithFirst<int>(7);
+        // Pair<int, int> bar = foo.withSecond<int>(8);
+        // print(bar.first);
+
+        assertResultTyped(7,
+                          stmts(new NewStmt(new VarDec(new ClassType(TypecheckerClassTest.WITH_FIRST_CLASS_NAME,
+                                                                     new Type[] { new IntType() }),
+                                                       new Variable("foo")),
+                                            TypecheckerClassTest.WITH_FIRST_CLASS_NAME,
+                                            new Type[] { new IntType() },
+                                            new Exp[] { new IntExp(7) }),
+                                new MethodCallStmt(new VarDec(new ClassType(TypecheckerClassTest.PAIR_CLASS_NAME,
+                                                                            new Type[] {
+                                                                                new IntType(),
+                                                                                new IntType()
+                                                                            }),
+                                                              new Variable("bar")),
+                                                   new LhsExp(new VariableLhs(new Variable("foo"))),
+                                                   new MethodName("withSecond"),
+                                                   new Type[] { new IntType() },
+                                                   new Exp[] { new IntExp(8) }),
+                                new PrintStmt(new LhsExp(new FieldAccessLhs(new VariableLhs(new Variable("bar")),
+                                                                            new Variable("first"))))),
+                          TypecheckerClassTest.pairClass(),
+                          TypecheckerClassTest.withFirstClass());
     }
 }

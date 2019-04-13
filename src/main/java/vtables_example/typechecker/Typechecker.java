@@ -41,22 +41,20 @@ public class Typechecker {
         return result;
     } // asSet
     
-    public Type typeofField(final ClassName onClass,
+    public Type typeofField(final ClassType onClass,
                             final Variable fieldName) throws TypeErrorException {
-        final ClassDefinition classDef = getClass(onClass);
-        for (final VarDec vardec : classDef.instanceVariables) {
+        final ClassDefinition abstractedDef = getClass(onClass.name);
+        final ClassDefinition specializedDef = TypeRewriter.rewriteClassDefinition(abstractedDef,
+                                                                                   onClass.types);
+        for (final VarDec vardec : specializedDef.instanceVariables) {
             if (vardec.variable.equals(fieldName)) {
                 return vardec.type;
             }
         }
 
         // if we get here, this class lacks this instance variable
-        // see if a parent has it
-        if (classDef.doesExtend == null) {
-            throw new TypeErrorException("No instance variable defined: " + fieldName);
-        } else {
-            return typeofField(classDef.doesExtend.extendsName, fieldName);
-        }
+        // try with a parent
+        return typeofField(asSupertype(onClass), fieldName);
     } // typeofField
     
     public Type typeofLhs(final TypeEnvironment env,
@@ -68,9 +66,9 @@ public class Typechecker {
             final FieldAccessLhs asField = (FieldAccessLhs)lhs;
             final Type lhsType = typeofLhs(env, asField.lhs);
             if (lhsType instanceof ClassType) {
-                final ClassName accessName = ((ClassType)lhsType).name;
-                asField.setLhsClass(accessName);
-                return typeofField(accessName, asField.field);
+                final ClassType asClass = (ClassType)lhsType;
+                asField.setLhsClass(asClass.name);
+                return typeofField(asClass, asField.field);
             } else {
                 throw new TypeErrorException("Expected class type; got: " + lhsType);
             }
